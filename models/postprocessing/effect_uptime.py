@@ -16,7 +16,6 @@ class EffectUptime(Base):
         super().__init__()
         self.combat_encounter = combat_encounter
         self.target_unit = target_unit
-
         self.ability_infos = [ability for ability in self.combat_encounter.encounter_log.ability_infos.values() if ability.name == ability_name]
 
         # Compute the "real" time filter for the uptime by finding the first and last combat events targeting the target unit.

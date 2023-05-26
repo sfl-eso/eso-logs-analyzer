@@ -63,7 +63,7 @@ class CombatEncounter(Base):
 
         return [unit for unit, was_damaged in active_units.items() if was_damaged]
 
-    def compute_debuff_uptimes(self, ability_names: List[str], only_boss: bool = True, unit_names: List[str] = None) -> Dict[UnitAdded, List[EffectUptime]]:
+    def debuff_uptimes(self, ability_names: List[str], only_boss: bool = True, unit_names: List[str] = None) -> Dict[UnitAdded, List[EffectUptime]]:
         uptime_dict: Dict[UnitAdded, List[EffectUptime]] = defaultdict(list)
 
         if unit_names:

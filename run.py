@@ -4,11 +4,11 @@ from typing import Union
 
 from python_json_config import ConfigBuilder, Config
 
+from export import generate_markdown_file
 from log import init_loggers
 from models.data import EncounterLog
 from models.postprocessing import CombatEncounter
 from models.postprocessing.effect_uptime import EffectUptime
-from trials import Rockgrove
 
 
 def cli_args() -> Namespace:
@@ -51,25 +51,7 @@ def main(args: Namespace):
 
     log: EncounterLog = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
     combat_encounters = CombatEncounter.load(log)
-
-    debuffs = sorted([
-        "Crusher",
-        "Major Breach",
-        "Minor Breach",
-        "Crimson Oath's Rive",
-        "Minor Vulnerability",
-        "Major Vulnerability",
-        "Minor Brittle",
-        "Flame Weakness",
-        "Frost Weakness",
-        "Shock Weakness"
-    ])
-
-    oax_encounters = [encounter for encounter in combat_encounters if encounter.is_boss_encounter and encounter.get_boss() == Rockgrove.OAXILTSO]
-    encounter = oax_encounters[-1]
-    for unit, uptimes in encounter.compute_debuff_uptimes(debuffs, unit_names=["Oaxiltso", "Havocrel Annihilator"]).items():
-        for uptime in uptimes:
-            print_uptime(uptime)
+    generate_markdown_file(config, log, combat_encounters)
 
     # TODO: trial profiles that can be used/configured via config
     # TODO: compute uptimes using callbacks on objects to reduce number of times events are iterated

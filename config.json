@@ -3,5 +3,8 @@
         "file": "debug.log",
         "console_level": "WARNING",
         "file_level": "DEBUG"
+    },
+    "export": {
+        "file_suffix": "dragon_aegis"
     }
 }

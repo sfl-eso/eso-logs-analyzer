@@ -63,14 +63,14 @@ def render_readme(config: Config):
 
         # TODO: read html and get title element
         name = file.stem
-        pages.append((file.name, name))
+        pages.append((file.stem, name))
 
     file_name = f"{config.export.path}/index.html"
     return render_to_file("readme", {"title": config.export.title_prefix, "pages": pages, "url_prefix": config.web.url_prefix}, file_name)
 
 
 def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: Config):
-    debuffs = [
+    debuffs = sorted([
         "Crusher",
         "Major Breach",
         "Minor Breach",
@@ -81,7 +81,7 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
         "Flame Weakness",
         "Frost Weakness",
         "Shock Weakness"
-    ]
+    ])
 
     hostile_units = ["Oaxiltso", "Havocrel Annihilator"]
 

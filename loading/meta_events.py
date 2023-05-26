@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime, timedelta
 from itertools import chain
 from typing import List, TYPE_CHECKING, Optional
 
 from logger import logger
 from utils import parse_epoch_time
+from .ability_events import TargetEvent, HealthRegen
 from .event import Event
 from .unit_events import UnitAdded
-from .ability_events import TargetEvent, HealthRegen, EffectChanged, EndCast, CombatEvent
 
 if TYPE_CHECKING:
-    from .log import EncounterLog
+    pass
 
 
 class BeginLog(Event):
@@ -57,7 +56,8 @@ class BeginTrial(Event):
 class EndTrial(Event):
     event_type: str = "END_TRIAL"
 
-    def __init__(self, id: int, trial_id: str, trial_duration_ms: str, success: str, final_score: str, final_vitality_bonus: str):
+    def __init__(self, id: int, trial_id: str, trial_duration_ms: str, success: str, final_score: str,
+                 final_vitality_bonus: str):
         super(EndTrial, self).__init__(id)
         self.trial_id = trial_id
         self.trial_duration_ms = int(trial_duration_ms)
@@ -128,13 +128,14 @@ class BeginCombat(Event):
                 unit.owner_unit = owner_unit
                 owner_unit.pets[self].append(unit)
             elif unit.hostility == "NPC_ALLY" and unit.owner_unit_id:
-                logger().error(f"Can't add {unit.hostility} unit {unit} with unknown owner id {unit.owner_unit_id}")
+                logger().info(f"Can't add {unit.hostility} unit {unit} with unknown owner id {unit.owner_unit_id}")
 
     def check_unit_overlap(self):
         # Check that there are no units that are different but share a unit id in this encounter
         unique_units = set(self.start_units).union(set(self.end_units)).union(set(self.active_units))
         unique_unit_ids = set([event.unit_id for event in unique_units])
-        assert len(unique_units) == len(unique_unit_ids), f"Encounter contains multiple units with the same unit id: {self}"
+        assert len(unique_units) == len(
+            unique_unit_ids), f"Encounter contains multiple units with the same unit id: {self}"
 
         # Confirm that the active unit list contains all units that are in the start and end units
         start_end = set(self.start_units).union(set(self.end_units))
@@ -253,7 +254,8 @@ class MapChanged(Event):
 class TrialInit(Event):
     event_type: str = "TRIAL_INIT"
 
-    def __init__(self, id: int, trial_id: str, in_progress: str, completed: str, start_time_in_ms: str, duration_in_ms, success: str, final_score: str):
+    def __init__(self, id: int, trial_id: str, in_progress: str, completed: str, start_time_in_ms: str, duration_in_ms,
+                 success: str, final_score: str):
         super(TrialInit, self).__init__(id)
         self.trial_id = trial_id
         self.in_progress = in_progress == "T"

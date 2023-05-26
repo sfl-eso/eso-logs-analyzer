@@ -36,7 +36,6 @@ def main(args: Namespace):
     encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in log.combat_encounters]
     for encounter in encounters:
         print(encounter)
-        print(encounter.dps())
 
     # boss_encounters = find_boss_encounters(log)
     # print(f"Evaluating log on {log._begin_log.time}")

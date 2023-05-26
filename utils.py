@@ -1,10 +1,28 @@
+import csv
 import json
 import sys
-import csv
 from datetime import datetime
 from typing import Set
 
+from tqdm import tqdm
+
 _ability_map = None
+
+
+def __get_num_lines(file_name: str) -> int:
+    """
+    Fast counting of the number of lines in large files (https://stackoverflow.com/a/9631635).
+    """
+
+    def blocks(file, size=65536):
+        while True:
+            b = file.read(size)
+            if not b:
+                break
+            yield b
+
+    with open(file_name, "r", encoding="utf-8", errors="ignore") as f:
+        return sum(bl.count("\n") for bl in blocks(f))
 
 
 def read_csv(file_name: str,
@@ -13,9 +31,11 @@ def read_csv(file_name: str,
              has_header: bool = True,
              columns_to_keep: Set[str] = None) -> list:
     lines = []
+    num_lines = __get_num_lines(file_name)
     csv.field_size_limit(sys.maxsize)
     with open(file_name, 'r') as file:
-        data: csv.DictReader = csv.reader(file, delimiter=delimiter, quotechar=quotechar)
+        data = tqdm(csv.reader(file, delimiter=delimiter, quotechar=quotechar), total=num_lines,
+                    desc=f"Loading {file_name}")
         if has_header:
             header = next(data)
             for row in data:

@@ -1,12 +1,12 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 
 from tqdm import tqdm
 
-from logger import logger
 from loading import Event, AbilityInfo, BeginLog, EndLog, BeginCombat, EndCombat, EffectInfo, PlayerInfo, UnitAdded, \
     UnitRemoved, UnitChanged, TrialInit, TargetEvent, SoulGemResurectionAcceptedEvent, BeginCast, EndCast
+from logger import logger
 from utils import read_csv
 
 
@@ -43,7 +43,7 @@ class EncounterLog(object):
                                                    if unit_info.unit_type == "PLAYER"}
         self.combat_encounters: List[BeginCombat] = []
         self._create_combat_encounters()
-        for encounter in tqdm(self.combat_encounters, desc="Initializing encounters", ascii=" #"):
+        for encounter in tqdm(self.combat_encounters, desc="Initializing encounters"):
             # First check that we won't get unit id collisions in this encounter
             encounter.check_unit_overlap()
             # Extract all hostile units that are active during this encounter
@@ -51,7 +51,7 @@ class EncounterLog(object):
 
         self._merge_combat_encounters()
 
-        for encounter in tqdm(self.combat_encounters, desc="Processing encounters", ascii=" #"):
+        for encounter in tqdm(self.combat_encounters, desc="Processing encounters"):
             encounter.process_combat_events()
 
     def __str__(self):
@@ -64,13 +64,15 @@ class EncounterLog(object):
         begin_cast_cache: Dict[str, BeginCast] = {}
         begin_cast_dict: Dict[str, BeginCast] = {}
 
-        for event in tqdm(self._events, desc="Creating event metadata", ascii=" #", position=1, leave=False):
+        for event in tqdm(self._events, desc="Creating event metadata"):
             # Set the epoch time for each event by computing the diff to the begin log event
             if not isinstance(event, TrialInit):
                 event.time = self._begin_log.event_time(event.id)
 
             # Set ability field for every event that has a ability id
-            if hasattr(event, "ability_id") and not isinstance(event, SoulGemResurectionAcceptedEvent) and not isinstance(event, AbilityInfo):
+            if hasattr(event, "ability_id") and not isinstance(event,
+                                                               SoulGemResurectionAcceptedEvent) and not isinstance(
+                event, AbilityInfo):
                 event.ability = self.ability_info(event.ability_id)
 
             # Match begin cast and end cast events
@@ -180,7 +182,12 @@ class EncounterLog(object):
                 event.unit_added = unit_added
 
     def _merge_combat_encounters(self):
-        past_encounters = []
+        UNIT_ID = "UNIT_ID"
+        MIN_HP = "MIN_HP"
+        MAX_HP = "MAX_HP"
+
+        # Contains encounters that are candidates for merging and the metadata for bosses in those encounters
+        past_encounters: List[Tuple[BeginCombat, Dict[Tuple[str, str], dict]]] = []
         merged_encounters = []
         # Create encounter pairing
         for encounter in self.combat_encounters:
@@ -191,28 +198,56 @@ class EncounterLog(object):
 
             # This is the first boss encounter
             if not past_encounters:
-                past_encounters.append(encounter)
+                past_encounters.append((encounter, {}))
                 continue
 
             # Test if the boss units have the same unit ids
-            boss_units = {unit.name: unit.unit_id for unit in encounter.boss_units}
+            # Test if encounters should be merged by comparing unit ids and current HP. Only compare units if they
+            # share the unit id and if the HP is monotonically decreasing throughout the encounters.
+            boss_units = {}
+            for boss in encounter.boss_units:
+                target_events = [event for event in encounter.events
+                                 if isinstance(event, TargetEvent) and event.target_unit_id == boss.unit_id]
+                if not target_events:
+                    # Ignore bosses that have not been subject to target events. These may be units added due to
+                    # hard mode mechanics, that do not directly interact with the players.
+                    continue
+                min_hp_in_encounter = min(event.target_current_health for event in target_events)
+                max_hp_in_encounter = max(event.target_current_health for event in target_events)
+                boss_units[(boss.name, boss.unit_id)] = {UNIT_ID: boss.unit_id, MIN_HP: min_hp_in_encounter,
+                                                         MAX_HP: max_hp_in_encounter}
+
             same_units = False
-            for p_enc in past_encounters:
-                p_boss_units = p_enc.boss_units
-                for unit in p_boss_units:
-                    same_units = same_units or boss_units.get(unit.name) == unit.unit_id
+            for past_encounter, past_encounter_boss_metadata in past_encounters:
+                for boss_name, boss_unit_id in past_encounter_boss_metadata:
+                    if (boss_name, boss_unit_id) not in boss_units:
+                        # The combination of unit name and unit id are not the same as in the previous encounter. These
+                        # encounters should not be merged.
+                        continue
+                    past_encounter_metadata = past_encounter_boss_metadata[(boss_name, boss_unit_id)]
+                    current_metadata = boss_units[(boss_name, boss_unit_id)]
+
+                    # The encounters should be merged if the minimum HP during the last encounter is higher or equal to
+                    # the maximum HP of the matching unit between the two encounters. This means that the HP is
+                    # monotonically decreasing. If the encounters were separate encounters, the max HP in the second
+                    # encounter would be at 100% current HP and thus always higher than the minimum HP of the first
+                    # encounter.
+                    same_units = same_units or past_encounter_metadata[MIN_HP] >= current_metadata[MAX_HP]
+
             # This encounter shares a boss unit with past encounters
             if same_units:
-                past_encounters.append(encounter)
+                past_encounters.append((encounter, boss_units))
             else:
-                # This encounter does not share a boss unit with past encounters. Hence we have nothing to merge with past encounters anymore
-                merged_encounters.append(past_encounters)
-                past_encounters = [encounter]
+                # This encounter does not share a boss unit with past encounters. Hence, we have nothing to merge with past encounters anymore
+                merged_encounters.append([encounter[0] for encounter in past_encounters])
+                past_encounters = [(encounter, boss_units)]
         # Add the last set of encounters
         if past_encounters:
-            merged_encounters.append(past_encounters)
+            merged_encounters.append([encounter[0] for encounter in past_encounters])
 
-        self.combat_encounters = sorted([BeginCombat.merge_encounters(encounter_match) for encounter_match in merged_encounters], key=lambda e: e.time)
+        self.combat_encounters = sorted(
+            [BeginCombat.merge_encounters(encounter_match) for encounter_match in merged_encounters],
+            key=lambda e: e.time)
 
     @classmethod
     def parse_log(cls, file: Union[str, Path], multiple: bool = False):
@@ -223,7 +258,8 @@ class EncounterLog(object):
         count = 0
         logs = []
         previous_event = None
-        for line in tqdm(csv_file, desc=f"Parsing log {path}", ascii=" #", position=0):
+
+        for line in tqdm(csv_file, desc=f"Parsing log {path}"):
             event = Event.create(count, int(line[0]), line[1], *line[2:])
             if previous_event is not None:
                 event.previous = previous_event
@@ -231,13 +267,14 @@ class EncounterLog(object):
             previous_event = event
             count += 1
             if isinstance(event, EndLog):
-                log = cls(events)
+                logs.append(events)
                 if multiple:
                     # We have a separate log starting after this line
-                    logs.append(log)
                     events = []
                     count = 0
                     previous_event = None
                 else:
-                    return log
-        return logs
+                    break;
+
+        logs = [cls(events) for events in logs]
+        return logs if multiple else logs[0]

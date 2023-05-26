@@ -98,7 +98,7 @@ class BeginCombat(Event):
     def extract_hostile_units(self):
         self.hostile_units = [unit for unit in self.active_units if unit.hostility == "HOSTILE"]
 
-    def process_combat_events(self):
+    def enrich_combat_events(self):
         unit_dict = {event.unit_id: event for event in self.active_units}
 
         # Process events and set unit fields where possible

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Tuple
+from typing import Dict, List, Optional, Union, Tuple, Set
 
 from tqdm import tqdm
 
@@ -51,8 +51,8 @@ class EncounterLog(object):
 
         self._merge_combat_encounters()
 
-        for encounter in tqdm(self.combat_encounters, desc="Processing encounters"):
-            encounter.process_combat_events()
+        for encounter in tqdm(self.combat_encounters, desc="Enriching combat events"):
+            encounter.enrich_combat_events()
 
     def __str__(self):
         return f"{self.__class__.__name__}(begin={self._begin_log.time}, end={self._end_log.time})"
@@ -182,12 +182,36 @@ class EncounterLog(object):
                 event.unit_added = unit_added
 
     def _merge_combat_encounters(self):
-        UNIT_ID = "UNIT_ID"
-        MIN_HP = "MIN_HP"
-        MAX_HP = "MAX_HP"
+        class BossMetadata:
+            def __init__(self, name: str):
+                self.name = name
+                self.unit_ids: Set[str] = set()
+                self.target_events: List[TargetEvent] = []
+
+            def add_unit_id(self, boss: UnitAdded):
+                self.unit_ids.add(boss.unit_id)
+
+            def add_target_events(self, events: List[TargetEvent]):
+                # Filter events at (almost) max HP to still merge encounters if the boss resetting to max HP at the end
+                # of the encounter is recorded.
+                events = [event for event in events if
+                          (event.target_current_health / event.target_maximum_health) < 0.99]
+                self.target_events.extend(events)
+
+            @property
+            def has_events(self):
+                return bool(self.target_events)
+
+            @property
+            def min_hp(self) -> int:
+                return min(event.target_current_health for event in self.target_events)
+
+            @property
+            def max_hp(self) -> int:
+                return max(event.target_current_health for event in self.target_events)
 
         # Contains encounters that are candidates for merging and the metadata for bosses in those encounters
-        past_encounters: List[Tuple[BeginCombat, Dict[Tuple[str, str], dict]]] = []
+        past_encounters: List[Tuple[BeginCombat, Dict[str, BossMetadata]]] = []
         merged_encounters = []
         # Create encounter pairing
         for encounter in self.combat_encounters:
@@ -201,41 +225,45 @@ class EncounterLog(object):
                 past_encounters.append((encounter, {}))
                 continue
 
-            # Test if the boss units have the same unit ids
-            # Test if encounters should be merged by comparing unit ids and current HP. Only compare units if they
-            # share the unit id and if the HP is monotonically decreasing throughout the encounters.
-            boss_units = {}
-            for boss in encounter.boss_units:
-                target_events = [event for event in encounter.events
-                                 if isinstance(event, TargetEvent) and event.target_unit_id == boss.unit_id]
-                if not target_events:
-                    # Ignore bosses that have not been subject to target events. These may be units added due to
-                    # hard mode mechanics, that do not directly interact with the players.
-                    continue
-                min_hp_in_encounter = min(event.target_current_health for event in target_events)
-                max_hp_in_encounter = max(event.target_current_health for event in target_events)
-                boss_units[(boss.name, boss.unit_id)] = {UNIT_ID: boss.unit_id, MIN_HP: min_hp_in_encounter,
-                                                         MAX_HP: max_hp_in_encounter}
+            # Test if the bosses in this encounter match the unit id of bosses in the previous encounters and compare
+            # current HP during this encounter with current HP during the previous encounters (it must be monotonically
+            # decreasing).
+            # Bosses may appear twice when changing unit id. In this case the "empty" boss may match the unit id of
+            # a previous encounter while the HP still decreases monotonically under a different unit id.
+            boss_units: Dict[str, BossMetadata] = {}
+            unique_boss_names = set(boss.name for boss in encounter.boss_units)
+            for boss_name in unique_boss_names:
+                metadata = BossMetadata(boss_name)
+                units = [unit for unit in encounter.boss_units if unit.name == boss_name]
+                # Merge all units with the same name but different unit ids in the same metadata object
+                for unit in units:
+                    metadata.add_unit_id(unit)
+                    target_events = [event for event in encounter.events
+                                     if isinstance(event, TargetEvent) and event.target_unit_id == unit.unit_id]
+                    metadata.add_target_events(target_events)
+                # Ignore bosses that have not been subject to target events. These may be units added due to
+                # hard mode mechanics, that do not directly interact with the players.
+                if metadata.has_events:
+                    boss_units[boss_name] = metadata
 
             same_units = False
             for past_encounter, past_encounter_boss_metadata in past_encounters:
-                for boss_name, boss_unit_id in past_encounter_boss_metadata:
-                    if (boss_name, boss_unit_id) not in boss_units:
-                        # The combination of unit name and unit id are not the same as in the previous encounter. These
-                        # encounters should not be merged.
+                for boss_name, past_boss_metadata in past_encounter_boss_metadata.items():
+                    if boss_name not in boss_units:
+                        # The boss did not occur in the previous encounter.
                         continue
-                    past_encounter_metadata = past_encounter_boss_metadata[(boss_name, boss_unit_id)]
-                    current_metadata = boss_units[(boss_name, boss_unit_id)]
+                    current_metadata = boss_units[boss_name]
 
                     # The encounters should be merged if the minimum HP during the last encounter is higher or equal to
                     # the maximum HP of the matching unit between the two encounters. This means that the HP is
                     # monotonically decreasing. If the encounters were separate encounters, the max HP in the second
                     # encounter would be at 100% current HP and thus always higher than the minimum HP of the first
                     # encounter.
-                    same_units = same_units or past_encounter_metadata[MIN_HP] >= current_metadata[MAX_HP]
+                    same_units = same_units or past_boss_metadata.min_hp >= current_metadata.max_hp
 
-            # This encounter shares a boss unit with past encounters
-            if same_units:
+            # This encounter shares a boss unit with past encounters or this encounter did not encounter any enemies
+            # (may happen after resurrection when dying before damaging any other enemies).
+            if same_units or len(boss_units) == 0:
                 past_encounters.append((encounter, boss_units))
             else:
                 # This encounter does not share a boss unit with past encounters. Hence, we have nothing to merge with past encounters anymore

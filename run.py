@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Union, List
 
 from python_json_config import ConfigBuilder, Config
+from tqdm import tqdm
 
 from loading import EncounterLog
 from processing import Encounter
@@ -33,7 +34,8 @@ def main(args: Namespace):
     ability_map = assert_file_exists(config.ability_map)
     log = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
 
-    encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in log.combat_encounters]
+    encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in
+                                   tqdm(log.combat_encounters, desc="Processing encounters")]
     for encounter in encounters:
         print(encounter)
 

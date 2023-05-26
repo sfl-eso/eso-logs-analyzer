@@ -43,11 +43,15 @@ class EncounterLog(object):
                                                    if unit_info.unit_type == "PLAYER"}
         self.combat_encounters: List[BeginCombat] = []
         self._create_combat_encounters()
-        for encounter in tqdm(self.combat_encounters, desc="Processing encounters", ascii=" #"):
+        for encounter in tqdm(self.combat_encounters, desc="Initializing encounters", ascii=" #"):
             # First check that we won't get unit id collisions in this encounter
             encounter.check_unit_overlap()
             # Extract all hostile units that are active during this encounter
             encounter.extract_hostile_units()
+
+        self._merge_combat_encounters()
+
+        for encounter in tqdm(self.combat_encounters, desc="Processing encounters", ascii=" #"):
             encounter.process_combat_events()
 
     def __str__(self):
@@ -174,6 +178,43 @@ class EncounterLog(object):
                 unit_added = added_units[event.unit_id]
                 unit_added.unit_changed.append(event)
                 event.unit_added = unit_added
+
+    def _merge_combat_encounters(self):
+        past_encounters = []
+        merged_encounters = []
+        # Create encounter pairing
+        for encounter in self.combat_encounters:
+            # We only merge boss encounters
+            if not encounter.is_boss_encounter():
+                merged_encounters.append([encounter])
+                continue
+
+            # This is the first boss encounter
+            if not past_encounters:
+                past_encounters.append(encounter)
+                continue
+
+            # Test if the boss units have the same unit ids
+            boss_units = {unit.name: unit.unit_id for unit in encounter.boss_units}
+            same_units = False
+            for p_enc in past_encounters:
+                p_boss_units = p_enc.boss_units
+                for unit in p_boss_units:
+                    same_units = same_units or boss_units.get(unit.name) == unit.unit_id
+            # This encounter shares a boss unit with past encounters
+            if same_units:
+                past_encounters.append(encounter)
+            else:
+                # This encounter does not share a boss unit with past encounters. Hence we have nothing to merge with past encounters anymore
+                merged_encounters.append(past_encounters)
+                past_encounters = [encounter]
+        # Add the last set of encounters
+        if past_encounters:
+            merged_encounters.append(past_encounters)
+
+        self.combat_encounters = sorted([BeginCombat.merge_encounters(encounter_match) for encounter_match in merged_encounters], key=lambda e: e.time)
+        for encounter in self.combat_encounters:
+            print(f"Duration {encounter.end_combat.time - encounter.time} for encounter {encounter} (start at {encounter.time})")
 
     @classmethod
     def parse_log(cls, file: str, multiple: bool = False):

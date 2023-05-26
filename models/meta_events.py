@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import List, TYPE_CHECKING
+from itertools import chain
+from typing import List, TYPE_CHECKING, Optional
 
 from logger import logger
 from utils import parse_epoch_time
@@ -129,6 +130,53 @@ class BeginCombat(Event):
         start_end = set(self.start_units).union(set(self.end_units))
         non_active_units = start_end.difference(set(self.active_units))
         assert len(non_active_units) == 0, f"Encounter has start or end units than are not listed as active: {self}"
+
+    def is_boss_encounter(self) -> bool:
+        is_boss = False
+        for unit in self.hostile_units:
+            is_boss = is_boss or unit.is_boss
+        return is_boss
+
+    @property
+    def boss_units(self) -> Optional[List[UnitAdded]]:
+        if self.is_boss_encounter():
+            return [unit for unit in self.hostile_units if unit.is_boss]
+        else:
+            return None
+
+    @classmethod
+    def merge_encounters(cls, encounters: List[BeginCombat]):
+        # We have nothing to merge if there is only one instance in the list
+        if len(encounters) == 1:
+            return encounters[0]
+
+        from querying import EventSpan
+        start = encounters[0]
+        end = encounters[-1].end_combat
+        start_units = encounters[0].start_units
+        end_units = encounters[-1].end_units
+        active_units = list(set(chain(*[encounter.active_units for encounter in encounters])))
+        hostile_units = list(set(chain(*[encounter.hostile_units for encounter in encounters])))
+
+        events_to_remove = []
+        span = EventSpan(start, end)
+        for event in span:
+            if (isinstance(event, BeginCombat) and event != start) or isinstance(event, EndCombat) and event != end:
+                events_to_remove.append(event)
+
+        # Skip the BeginCombat and EndCombat events within this merged encounter
+        for event in events_to_remove:
+            event.previous.next = event.next
+
+        # Create the new encounter
+        new_encounter = start
+        new_encounter.end_combat = end
+        new_encounter.start_units = start_units
+        new_encounter.end_units = end_units
+        new_encounter.active_units = active_units
+        new_encounter.hostile_units = hostile_units
+        new_encounter.events = list(EventSpan(start, end))
+        return new_encounter
 
     # def compute_uptimes(self, log: EncounterLog):
     #     # Keep track of data in the form of Dict(unit_id -> Dict(ability_id -> object))

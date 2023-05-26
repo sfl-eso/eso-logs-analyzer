@@ -17,7 +17,7 @@ class StatusEffectType(Enum):
 
 class NoEffectBar(Enum):
     NEVER = "NEVER"
-    # DEFAULT = "DEFAULT"
+    DEFAULT = "DEFAULT"
 
 
 class Server(Enum):

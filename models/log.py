@@ -4,8 +4,9 @@ from typing import Dict, List, Optional
 
 from tqdm import tqdm
 
+from logger import logger
 from models import Event, AbilityInfo, BeginLog, EndLog, BeginCombat, EndCombat, EffectInfo, PlayerInfo, UnitAdded, \
-    UnitRemoved, UnitChanged, TrialInit
+    UnitRemoved, UnitChanged, TrialInit, TargetEvent, SoulGemResurectionAcceptedEvent, BeginCast, EndCast
 from utils import read_csv
 
 
@@ -23,15 +24,11 @@ class EncounterLog(object):
         self._begin_log: BeginLog = self._event_dict["BEGIN_LOG"][0]
         self._end_log: EndLog = self._event_dict["END_LOG"][0]
 
-        # Set the epoch time for each event by computing the diff to the begin log event
-        for event in self._events:
-            if not isinstance(event, TrialInit):
-                event.time = self._begin_log.event_time(event.id)
-
         # Ability Infos
         self.ability_infos: Dict[str, AbilityInfo] = {ability_info.ability_id: ability_info
                                                       for ability_info in self._event_dict["ABILITY_INFO"]}
         self._match_event_infos()
+        self.create_metadata()
 
         # Unit spawns and kills
         self._match_unit_events()
@@ -54,6 +51,43 @@ class EncounterLog(object):
         return f"{self.__class__.__name__}(begin={self._begin_log.time}, end={self._end_log.time})"
 
     __repr__ = __str__
+
+    def create_metadata(self):
+        # The cache will be used to confirm that every cast was ended, and the dict is just needed for lookups of duplicate end cast events
+        begin_cast_cache: Dict[str, BeginCast] = {}
+        begin_cast_dict: Dict[str, BeginCast] = {}
+
+        for event in tqdm(self._events, desc="Creating event metadata"):
+            # Set the epoch time for each event by computing the diff to the begin log event
+            if not isinstance(event, TrialInit):
+                event.time = self._begin_log.event_time(event.id)
+
+            # Set ability field for every event that has a ability id
+            if hasattr(event, "ability_id") and not isinstance(event, SoulGemResurectionAcceptedEvent) and not isinstance(event, AbilityInfo):
+                event.ability = self.ability_info(event.ability_id)
+
+            # Match begin cast and end cast events
+            if isinstance(event, BeginCast):
+                begin_cast_cache[event.cast_effect_id] = event
+                begin_cast_dict[event.cast_effect_id] = event
+            elif isinstance(event, EndCast):
+                try:
+                    begin_event = begin_cast_dict[event.cast_effect_id]
+                except KeyError as e:
+                    logger().error(f"No begin cast for end cast {event}")
+                    continue
+                event.begin_cast = begin_event
+                if event.status == "COMPLETED" and begin_event.end_cast is not None:
+                    begin_event.duplicate_end_casts.append(event)
+                elif event.status == "COMPLETED":
+                    begin_event.end_cast = event
+                    del begin_cast_cache[event.cast_effect_id]
+                elif event.status == "PLAYER_CANCELLED" or event.status == "INTERRUPTED":
+                    begin_event.cancelled_end_cast = event
+                else:
+                    logger().error(f"Found EndCast event without unknown status {event.status}: {event} ")
+        if len(begin_cast_cache) > 0:
+            logger().warn(f"Found {len(begin_cast_cache)} begin events without end")
 
     def ability_info(self, ability_id) -> Optional[AbilityInfo]:
         # Stringify in case we get integers

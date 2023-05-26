@@ -8,7 +8,7 @@ def main():
     """
     https://www.esologs.com/reports/C6GkAg9VKPvYHzrx/
     """
-    log = EncounterLog.parse_log("data/markarth_vka.log", multiple=False)
+    log = EncounterLog.parse_log("/mnt/g/Jan/Projects/ESOLogs/data/markarth_vka.log", multiple=False)
     for encounter in log.combat_encounters:
         print(f"Enemies in encounter {encounter}")
         units = sorted(set([unit.name for unit in encounter.hostile_units]))

@@ -158,19 +158,29 @@ class BeginCast(TargetEvent):
                                         target_z_coord=target_z_coord)
 
         self.cast_effect_id = cast_effect_id
+        self.cancelled_end_cast: EndCast = None
         self.end_cast: EndCast = None
+        self.duplicate_end_casts: List[EndCast] = []
+
+    @property
+    def completed(self):
+        return self.end_cast is not None and self.cancelled_end_cast is None
+
+    @property
+    def cancelled(self):
+        return self.end_cast is not None and self.cancelled_end_cast is not None
 
 
 class EndCast(Event):
     event_type: str = "END_CAST"
 
-    def __init__(self, id: int, status: str, cast_effect_id, unknown1, unknown2=None, unknown3=None):
+    def __init__(self, id: int, status: str, cast_effect_id, ability_id, unknown2=None, unknown3=None):
         """
-        :param unknown1: Could be ability id
         :param unknown2: Some kind of id
         :param unknown3: Some kind of id
         """
-        super(EndCast, self).__init__(id, unknown1, unknown2, unknown3)
+        super(EndCast, self).__init__(id, unknown2, unknown3)
+        self.ability_id = ability_id
         self.status = status
         self.cast_effect_id = cast_effect_id
 
@@ -307,6 +317,13 @@ class CombatEvent(TargetEvent):
         # Something like 'MAGICKA', 'INVALID'
         self.resource_type = resource_type
         self.cast_effect_id = cast_effect_id
+
+
+class SoulGemResurectionAcceptedEvent(CombatEvent):
+    """
+    Filler class for events of players accepting soul gem resurrections. The ablity id will be 0 and have no matching info event.
+    """
+    pass
 
 
 class HealthRegen(Event):

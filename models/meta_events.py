@@ -8,7 +8,7 @@ from logger import logger
 from utils import parse_epoch_time
 from .event import Event
 from .unit_events import UnitAdded
-from .ability_events import TargetEvent, HealthRegen, EffectChanged
+from .ability_events import TargetEvent, HealthRegen, EffectChanged, EndCast, CombatEvent
 
 if TYPE_CHECKING:
     from .log import EncounterLog
@@ -80,6 +80,12 @@ class BeginCombat(Event):
         self.end_units: List[UnitAdded] = []
         self.hostile_units: List[UnitAdded] = []
 
+        self.buff_events: list = []
+        self.debuff_events: list = []
+        self.debuff_taken_events: list = []
+        self.damage_done_events: list = []
+        self.damage_taken_events: list = []
+
     def __str__(self):
         return f"{self.__class__.__name__}(id={self.id}, end_combat={self.end_combat is not None}, " \
                f"events={len(self.events)})"
@@ -94,13 +100,8 @@ class BeginCombat(Event):
 
     def process_combat_events(self, log: EncounterLog):
         for event in self.events:
+            # Set unit field for values referencing a unit (TODO: maybe do this in EncounterLog)
             if isinstance(event, TargetEvent):
-                try:
-                    event.ability = log.ability_info(event.ability_id)
-                except KeyError as e:
-                    # Resurrect events have ability id 0
-                    if event.type != "SOUL_GEM_RESURRECTION_ACCEPTED":
-                        logger().debug(f"Event has non existing ability id: {event}, {e}")
                 unit = log.unit_info(event.unit_id, event.id)
                 if unit is not None:
                     unit.combat_events_source.append(event)
@@ -113,6 +114,26 @@ class BeginCombat(Event):
                 unit = log.unit_info(event.unit_id, event.id)
                 unit.health_regen_events.append(event)
                 event.unit = unit
+
+            # Distinguish different event types (TODO: maybe do this in UnitAdded)
+            if isinstance(event, CombatEvent):
+                if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
+                    # Damage taken
+                    self.damage_taken_events.append(event)
+                elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
+                    # Damage done
+                    self.damage_done_events.append(event)
+            elif isinstance(event, EffectChanged):
+                if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
+                    # Debuffs taken
+                    self.debuff_taken_events.append(event)
+                    pass
+                elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
+                    # Debuffs done
+                    self.debuff_events.append(event)
+                elif event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "PLAYER_ALLY":
+                    # Buffs done/taken
+                    self.buff_events.append(event)
 
     # def compute_uptimes(self, log: EncounterLog):
     #     # Keep track of data in the form of Dict(unit_id -> Dict(ability_id -> object))

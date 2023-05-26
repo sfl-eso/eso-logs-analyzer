@@ -24,7 +24,7 @@ class Event(object):
         self._time = value
 
     def __str__(self):
-        fields = [f"{field}={value}" for field, value in self.__dict__.items() if field != "data" and field[0] != "_"]
+        fields = [f"{field}={value}" for field, value in self.__dict__.items() if not field.startswith("_") and field != "data" and not isinstance(value, Event)]
         fields.append(f"data={self.data}")
         fields = ", ".join(fields)
         return f"{self.__class__.__name__}({fields})"
@@ -33,10 +33,16 @@ class Event(object):
 
     @classmethod
     def create(cls, order_id: int, id: int, event_type: str, *args):
+        from .ability_events import CombatEvent, SoulGemResurectionAcceptedEvent
         for subclass in all_subclasses(cls):
             if subclass.event_type == event_type:
                 instance = subclass(id, *args)
                 instance.order_id = order_id
+
+                # Hacky way to change the class of soul gem resurrection events, since they have a non-existing ability id
+                if isinstance(instance, CombatEvent) and instance.ability_id == "0":
+                    instance.__class__ = SoulGemResurectionAcceptedEvent
+
                 return instance
         raise ValueError(f"No event class found for {event_type}")
 

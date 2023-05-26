@@ -207,7 +207,7 @@ class EncounterLog(Base):
                 if current_encounter is not None:
                     self.logger.error(f"Entering combat event {event} while already in combat event {current_encounter}")
                 current_encounter = event
-                
+
             elif isinstance(event, EndCombat):
                 if current_encounter is None:
                     self.logger.error(f"Leaving combat event {event} without being in combat")
@@ -266,6 +266,13 @@ class EncounterLog(Base):
                 unit_added = added_units[event.unit_id]
                 unit_added.unit_changed.append(event)
                 event.unit_added = unit_added
+
+    @property
+    def events(self):
+        return self._events
+
+    def events_for_type(self, event_type: Type[Event]):
+        return self._event_dict[event_type.event_type]
 
     @classmethod
     def parse_log(cls, file: Union[str, Path], multiple: bool = False) -> Union[EncounterLog, List[EncounterLog]]:

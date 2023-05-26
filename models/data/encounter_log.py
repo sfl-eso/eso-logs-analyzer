@@ -136,12 +136,12 @@ class EncounterLog(Base):
                     # Ignore the cancelled event cast in this case
                     completed_end_events = [event for event in end_events if event.status == CastStatus.COMPLETED]
                     if len(completed_end_events) > 0:
-                        end_event = max(completed_end_events, key=Event.sort_key)
+                        end_event = max(completed_end_events)
                         match_events(begin_events[0], end_event)
                     else:
                         # This case should not happen, but handle it in case it does
                         self.logger.error(f"No completed cast event found for cast effect id {cast_effect_id} with multiple end events")
-                        end_event = max(end_events, key=Event.sort_key)
+                        end_event = max(end_events)
                         match_events(begin_events[0], end_event)
                 elif len(begin_events) == 2 and len(end_events) == 2:
                     # Two casts are triggered by the same action and they finish in different states.

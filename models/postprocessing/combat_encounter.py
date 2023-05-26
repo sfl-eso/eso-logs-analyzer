@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List, Dict
 
 from ..base import Base
 from ..data import EncounterLog, EventSpan
-from ..data.events import UnitAdded, EndCombat, BeginCombat
+from ..data.events import UnitAdded, EndCombat, BeginCombat, Event
 
 if TYPE_CHECKING:
     pass
@@ -21,6 +21,10 @@ class CombatEncounter(Base):
 
     def __str__(self):
         return f"{self.__class__.__name__}(start={self.event_span.start.time}, end={self.event_span.end.time}, duration={self.event_span.duration})"
+
+    @classmethod
+    def __extend_encounter(cls, start: Event, end: Event):
+        pass
 
     @classmethod
     def load(cls, encounter_log: EncounterLog) -> List[CombatEncounter]:

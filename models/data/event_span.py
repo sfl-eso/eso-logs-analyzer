@@ -10,8 +10,8 @@ class EventSpan(Base):
     def __init__(self, start: Event, end: Event):
         super().__init__()
         # The start event is always the one that appeared first
-        self.start = min(start, end, key=Event.sort_key)
-        self.end = max(start, end, key=Event.sort_key)
+        self.start = min(start, end)
+        self.end = max(start, end)
 
     def __iter__(self):
         event = self.start
@@ -24,10 +24,23 @@ class EventSpan(Base):
         yield self.end
 
     def __eq__(self, other):
+        if not isinstance(other, EventSpan):
+            return False
         return self.start.order_id == other.start.order_id and self.end.order_id == other.end.order_id
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __hash__(self):
-        return hash(f"{self.start.order_id} to {self.end.order_id}")
+        return hash((self.start.order_id, self.end.order_id))
+
+    def __contains__(self, item):
+        if isinstance(item, Event):
+            return self.start <= item <= self.end
+        elif isinstance(item, EventSpan):
+            return self.start <= item.start <= self.end and self.start <= item.end <= self.end
+        else:
+            raise NotImplementedError
 
     def overlaps(self, other: EventSpan) -> bool:
         return (other.start.order_id <= self.start.order_id <= other.end.order_id) \
@@ -41,6 +54,6 @@ class EventSpan(Base):
         if not self.overlaps(other):
             raise RuntimeError(f"Can't merge non-overlapping spans {self} and {other}")
 
-        start = min(self.start, other.start, key=Event.sort_key)
-        end = max(self.end, other.end, key=Event.sort_key)
+        start = min(self.start, other.start)
+        end = max(self.end, other.end)
         return self.__class__(start, end)

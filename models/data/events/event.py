@@ -55,6 +55,31 @@ class Event(Base):
 
     __repr__ = __str__
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.order_id == other.order_id
+
+    def __hash__(self):
+        return hash(self.order_id)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        if not isinstance(other, Event):
+            raise NotImplementedError
+        return self.order_id < other.order_id
+
+    def __le__(self, other):
+        return self.__eq__(other) or self.__lt__(other)
+
+    def __gt__(self, other):
+        return not self.__le__(other)
+
+    def __ge__(self, other):
+        return not self.__lt__(other)
+
     @classmethod
     def create(cls, order_id: int, id: int, event_type: str, *args):
         if cls.subclass_for_event_type is None:

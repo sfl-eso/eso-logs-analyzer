@@ -33,6 +33,6 @@ class EndCast(Event):
     @property
     def begin_cast(self) -> Optional[BeginCast]:
         if self.begin_casts:
-            return max(self.begin_casts, key=Event.sort_key)
+            return max(self.begin_casts)
         else:
             return None

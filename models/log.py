@@ -57,14 +57,16 @@ class EncounterLog(object):
 
     __repr__ = __str__
 
-    def ability_info(self, ability_id: str) -> Optional[AbilityInfo]:
-        return self.ability_infos.get(ability_id)
+    def ability_info(self, ability_id) -> Optional[AbilityInfo]:
+        # Stringify in case we get integers
+        return self.ability_infos[str(ability_id)]
 
     # def ability_info_by_name(self, name: str) -> Optional[AbilityInfo]:
     #     return self._ability_infos_by_name.get(name)
 
-    def player_info(self, unit_id: str) -> Optional[UnitAdded]:
-        return self.player_infos.get(unit_id)
+    def player_info(self, unit_id) -> Optional[UnitAdded]:
+        # Stringify in case we get integers
+        return self.player_infos[str(unit_id)]
 
     def unit_info(self, unit_id: str, event_id: int) -> Optional[UnitAdded]:
         unit_added = self._unit_infos.get(unit_id)

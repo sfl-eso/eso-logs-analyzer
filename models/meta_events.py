@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import List, TYPE_CHECKING
 
+from logger import logger
 from utils import parse_epoch_time
 from .event import Event
 from .unit_events import UnitAdded
@@ -74,6 +75,7 @@ class BeginCombat(Event):
         super(BeginCombat, self).__init__(id)
         self.end_combat: EndCombat = None
         self.events: List[Event] = []
+        self.units: List[UnitAdded] = []
 
     def __str__(self):
         return f"{self.__class__.__name__}(id={self.id}, end_combat={self.end_combat is not None}, " \
@@ -83,12 +85,18 @@ class BeginCombat(Event):
 
     def extract_enemies(self) -> List[UnitAdded]:
         units_added = [event for event in self.events if isinstance(event, UnitAdded)]
-        return [unit for unit in units_added if unit.hostility == "HOSTILE"]
+        self.units = [unit for unit in units_added if unit.hostility == "HOSTILE"]
+        return self.units
 
     def process_combat_events(self, log: EncounterLog):
         for event in self.events:
             if isinstance(event, TargetEvent):
-                event.ability = log.ability_info(event.ability_id)
+                try:
+                    event.ability = log.ability_info(event.ability_id)
+                except KeyError as e:
+                    # Resurrect events have ability id 0
+                    if event.type != "SOUL_GEM_RESURRECTION_ACCEPTED":
+                        logger().debug(f"Event has non existing ability id: {event}, {e}")
                 unit = log.unit_info(event.unit_id, event.id)
                 if unit is not None:
                     unit.combat_events_source.append(event)

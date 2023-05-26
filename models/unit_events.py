@@ -64,9 +64,9 @@ class PlayerInfo(Event):
 
     def update_info(self, log: EncounterLog):
         self.unit = log.player_info(self.unit_id)
-        self.passives = [log.ability_info(ability) for ability in self._raw_passives]
-        self.front_bar = [log.ability_info(ability) for ability in self._raw_front_bar]
-        self.back_bar = [log.ability_info(ability) for ability in self._raw_back_bar]
+        self.passives = [log.ability_info(ability) for ability in self._raw_passives if ability]
+        self.front_bar = [log.ability_info(ability) for ability in self._raw_front_bar if ability]
+        self.back_bar = [log.ability_info(ability) for ability in self._raw_back_bar if ability]
 
 
 class UnitAdded(Event):

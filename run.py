@@ -1,26 +1,46 @@
+from argparse import Namespace, ArgumentParser
 from pathlib import Path
+from typing import Union
 
-from kynes_aegis import find_boss_encounters, YANDIR_THE_BUTCHER, CAPTAIN_VROL, LORD_FALGRAVN
-from logger import logger
+from python_json_config import ConfigBuilder, Config
+
+from trials.kynes_aegis import find_boss_encounters
 from models import EncounterLog
-from querying import EventSpan, EffectSpan, print_encounter_stats, debuffs_target_unit
 
 
-def main():
+def cli_args() -> Namespace:
+    parser = ArgumentParser(prog="ESO Logs Analyzer",
+                            description="Analyzes an encounterlog file and computes multiple metrics.")
+    parser.add_argument("log", type=str, help="The log file that is analyzed")
+    parser.add_argument("--config", default="./config.json", type=str, help="Configuration file (JSON).")
+    return parser.parse_args()
+
+def assert_file_exists(path: Union[str, Path]) -> Path:
+    path = Path(path)
+    if not path.exists() or not path.is_file():
+        raise FileNotFoundError(f"File at {path} does not exist or is not a file!")
+    return path
+
+
+def main(args: Namespace):
     """
-    https://www.esologs.com/reports/C6GkAg9VKPvYHzrx/
+    https://www.esologs.com/reports/4VcYzBXARm8wp2yk
     """
-    log = EncounterLog.parse_log("/mnt/g/Jan/Projects/ESOLogs/data/markarth_vka.log", multiple=False)
-    ability_file = Path("/mnt/g/Jan/Projects/ESOLogs/ability_map.json")
-    boss_encounters = find_boss_encounters(log)
-    print(f"Evaluating log on {log._begin_log.time}")
-    all_uptimes = {}
-    for boss in [YANDIR_THE_BUTCHER, CAPTAIN_VROL, LORD_FALGRAVN]:
-        encounter = boss_encounters[boss][-1]
-        boss_unit = encounter.get_hostile_unit(boss)
-        uptimes = debuffs_target_unit(log, encounter, ability_file, boss_unit)
-        all_uptimes[encounter] = uptimes
-    all_uptimes
+    config: Config = ConfigBuilder().parse_config(assert_file_exists(args.config))
+    # TODO: encode data in config?
+    # TODO: interactive selection?
+    ability_map = assert_file_exists(config.ability_map)
+    log = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
+    log
+    # boss_encounters = find_boss_encounters(log)
+    # print(f"Evaluating log on {log._begin_log.time}")
+    # all_uptimes = {}
+    # for boss in [YANDIR_THE_BUTCHER, CAPTAIN_VROL, LORD_FALGRAVN]:
+    #     encounter = boss_encounters[boss][-1]
+    #     boss_unit = encounter.get_hostile_unit(boss)
+    #     uptimes = debuffs_target_unit(log, encounter, ability_file, boss_unit)
+    #     all_uptimes[encounter] = uptimes
+    # all_uptimes
 
     # print_encounter_stats(encounter, YANDIR_THE_BUTCHER)
     #
@@ -44,4 +64,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(cli_args())

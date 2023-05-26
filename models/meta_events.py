@@ -123,10 +123,12 @@ class BeginCombat(Event):
 
         # Process units and set owner ids where possible (for pets)
         for unit in self.active_units:
-            if unit.hostility == "NPC_ALLY" and unit.owner_unit_id is not None:
+            if unit.hostility == "NPC_ALLY" and unit.owner_unit_id is not None and unit.owner_unit_id in unit_dict:
                 owner_unit: UnitAdded = unit_dict[unit.owner_unit_id]
                 unit.owner_unit = owner_unit
                 owner_unit.pets[self].append(unit)
+            elif unit.hostility == "NPC_ALLY" and unit.owner_unit_id:
+                logger().error(f"Can't add {unit.hostility} unit {unit} with unknown owner id {unit.owner_unit_id}")
 
     def check_unit_overlap(self):
         # Check that there are no units that are different but share a unit id in this encounter
@@ -139,6 +141,7 @@ class BeginCombat(Event):
         non_active_units = start_end.difference(set(self.active_units))
         assert len(non_active_units) == 0, f"Encounter has start or end units than are not listed as active: {self}"
 
+    @property
     def is_boss_encounter(self) -> bool:
         is_boss = False
         for unit in self.hostile_units:
@@ -147,14 +150,10 @@ class BeginCombat(Event):
 
     @property
     def boss_units(self) -> Optional[List[UnitAdded]]:
-        if self.is_boss_encounter():
+        if self.is_boss_encounter:
             return [unit for unit in self.hostile_units if unit.is_boss]
         else:
             return None
-
-    @property
-    def player_units(self) -> List[UnitAdded]:
-        return [unit for unit in self.active_units if unit.unit_type == "PLAYER"]
 
     @classmethod
     def merge_encounters(cls, encounters: List[BeginCombat]):

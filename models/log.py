@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from tqdm import tqdm
 
@@ -185,7 +185,7 @@ class EncounterLog(object):
         # Create encounter pairing
         for encounter in self.combat_encounters:
             # We only merge boss encounters
-            if not encounter.is_boss_encounter():
+            if not encounter.is_boss_encounter:
                 merged_encounters.append([encounter])
                 continue
 
@@ -215,7 +215,7 @@ class EncounterLog(object):
         self.combat_encounters = sorted([BeginCombat.merge_encounters(encounter_match) for encounter_match in merged_encounters], key=lambda e: e.time)
 
     @classmethod
-    def parse_log(cls, file: str, multiple: bool = False):
+    def parse_log(cls, file: Union[str, Path], multiple: bool = False):
         path = Path(file)
         path = path.absolute()
         csv_file = read_csv(str(path), has_header=False)

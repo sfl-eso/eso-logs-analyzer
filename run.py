@@ -15,6 +15,7 @@ def cli_args() -> Namespace:
                             description="Analyzes an encounterlog file and computes multiple metrics.")
     parser.add_argument("log", type=str, help="The log file that is analyzed or a directory containing multiple log files")
     parser.add_argument("--config", default="./config.json", type=str, help="Configuration file (JSON).")
+    parser.add_argument("--dev", action="store_true", help="Set to enable development mode (i.e. use dev config and load css from web).")
     return parser.parse_args()
 
 
@@ -29,7 +30,8 @@ def main(args: Namespace):
     """
     https://www.esologs.com/reports/4VcYzBXARm8wp2yk
     """
-    config: Config = ConfigBuilder().parse_config(str(assert_file_exists(args.config)))
+    config_path = "config.dev.json" if args.dev else args.config
+    config: Config = ConfigBuilder().parse_config(str(assert_file_exists(config_path)))
     init_loggers(config)
 
     # Copy the web resources (javascript and css) to target dir.
@@ -43,8 +45,8 @@ def main(args: Namespace):
         for file in log_input.iterdir():
             if file.is_file() and file.suffix == ".log":
                 input_files.append(file)
+        print(f"Processing {len(input_files)} log files...")
 
-    print(f"Processing {len(input_files)} log files...")
     for log_file in input_files:
         logs = EncounterLog.parse_log(log_file, multiple=True)
         render_log(logs, config)

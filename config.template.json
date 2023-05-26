@@ -5,12 +5,12 @@
         "file_level": "DEBUG"
     },
     "export": {
-        "path": "/mnt/d/projects/dragon-aegis-ad-logs",
-        "file_suffix": "dragon_aegis",
-        "title_prefix": "DA - Ancient Dragons"
+        "path": "/path/to/repo/that/deploys/my/html/pages",
+        "file_suffix": "my_raid_group",
+        "title_prefix": "My Raid Group"
     },
     "web": {
-        "url_prefix": "dragon-aegis-ad-logs",
+        "url_prefix": "prefix/of/the/url/path",
         "resource_path": "web-resources"
     }
 }

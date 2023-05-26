@@ -2,6 +2,8 @@
 data/*.log
 test.py
 output
+config.dev.json
+config.json
 
 *.html
 

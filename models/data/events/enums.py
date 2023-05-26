@@ -15,6 +15,11 @@ class StatusEffectType(Enum):
     SNARE = "SNARE"
 
 
+class NoEffectBar(Enum):
+    NEVER = "NEVER"
+    # DEFAULT = "DEFAULT"
+
+
 class Server(Enum):
     EU = "EU Megaserver"
     NA = "NA Megaserver"
@@ -147,3 +152,8 @@ class ResourceType(Enum):
     STAMINA = "4"
     MAGICKA_AND_STAMINA = "5"  # Only triggered by Molten Whip, so probably mixed cost
     ULTIMATE = "8"
+
+
+class BooleanType(Enum):
+    TRUE = "T"
+    FALSE = "F"

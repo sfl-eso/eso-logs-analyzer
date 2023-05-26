@@ -130,9 +130,27 @@ class UnitAdded(Event):
 
     def damage_done(self, encounter: BeginCombat, unit: UnitAdded):
         from .ability_events import CombatEvent
-
-        damage_events = [event for event in self.combat_events_source[encounter] if isinstance(event, CombatEvent) and event.target_unit == unit]
-        damage_events
+        damage_events: List[CombatEvent] = [event for event in self.combat_events_source[encounter] if isinstance(event, CombatEvent) and event.target_unit == unit]
+        damage_done = 0
+        damage_done_by_type = defaultdict(int)
+        damage_done_by_ability = defaultdict(int)
+        for event in damage_events:
+            damage_done += event.damage
+            damage_done_by_ability[event.ability] += event.damage
+            damage_done_by_type[event.damage_type] += event.damage
+        duration = encounter.end_combat.time - encounter.time
+        dps = damage_done / duration.total_seconds()
+        dps_by_type = {damage_type: damage / duration.total_seconds() for damage_type, damage in damage_done_by_type.items()}
+        dps_by_ability = {ability: damage / duration.total_seconds() for ability, damage in damage_done_by_ability.items()}
+        return {
+            "dps": dps,
+            "damage_done": damage_done,
+            "dps_by_type": dps_by_type,
+            "damage_by_type": damage_done_by_type,
+            "dps_by_ability": dps_by_ability,
+            "damage_by_ability": damage_done_by_ability,
+            "duration": duration
+        }
 
         # Distinguish different event types (TODO: maybe do this in UnitAdded)
         # if isinstance(event, CombatEvent):

@@ -17,6 +17,9 @@ def main():
     #     print()
     boss_encounters = find_boss_encounters(log)
     encounter = boss_encounters[YANDIR_THE_BUTCHER][0]
+    unit = encounter.active_units[0]
+    yandir = [unit for unit in encounter.hostile_units if unit.name == YANDIR_THE_BUTCHER][0]
+    damage = unit.damage_done(encounter, yandir)
     encounter
     print(boss_encounters)
 

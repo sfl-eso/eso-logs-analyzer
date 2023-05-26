@@ -7,6 +7,7 @@ from python_json_config import ConfigBuilder, Config
 from log import init_loggers
 from models.data import EncounterLog
 from models.postprocessing import CombatEncounter
+from models.postprocessing.effect_uptime import EffectUptime
 from trials import Rockgrove
 
 
@@ -25,6 +26,19 @@ def assert_file_exists(path: Union[str, Path]) -> Path:
     return path
 
 
+def print_uptime(effect_uptime: EffectUptime):
+    result = effect_uptime.compute_uptime()
+    if result:
+        ability, uptime, total_time = result
+        relative_uptime = round(uptime / total_time, 4)
+
+        message = ""
+        message += f"Uptime for {ability.name} ({ability.ability_id}) "
+        message += f"on {effect_uptime.target_unit.name} ({effect_uptime.target_unit.unit_id}): {relative_uptime} "
+        message += f"(uptime: {round(uptime, 4)}, target_uptime: {round(total_time, 4)})"
+        print(message)
+
+
 def main(args: Namespace):
     """
     https://www.esologs.com/reports/4VcYzBXARm8wp2yk
@@ -35,11 +49,24 @@ def main(args: Namespace):
     log: EncounterLog = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
     combat_encounters = CombatEncounter.load(log)
 
-    for encounter in combat_encounters:
-        if encounter.is_boss_encounter and encounter.get_boss() == Rockgrove.OAXILTSO:
-            print(encounter)
-            for boss in encounter.boss_units:
-                print(boss)
+    debuffs = sorted([
+        "Crusher",
+        "Major Breach",
+        "Minor Breach",
+        "Crimson Oath's Rive",
+        "Minor Vulnerability",
+        "Major Vulnerability",
+        "Minor Brittle",
+        "Flame Weakness",
+        "Frost Weakness",
+        "Shock Weakness"
+    ])
+
+    oax_encounters = [encounter for encounter in combat_encounters if encounter.is_boss_encounter and encounter.get_boss() == Rockgrove.OAXILTSO]
+    encounter = oax_encounters[-1]
+    for debuff in debuffs:
+        for uptime in encounter.compute_debuff_uptimes(debuff, only_boss=True):
+            print_uptime(uptime)
 
     # TODO: encode data in config?
     # TODO: interactive selection?

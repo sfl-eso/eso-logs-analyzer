@@ -1,6 +1,7 @@
 {# Input vars:
 dev_mode: If set to True, we are in dev mode. Include resources via URL instead of locally, since browsers do not allow loading of data from file urls.
 navbar_title: title of navbar
+url_prefix: prefix of the url path
 #}
 
 <!DOCTYPE html>
@@ -36,7 +37,7 @@ bg-body: background color
         {#
         navbar-brand: allows customization for custom company, product, or project name.
         #}
-        <a class="navbar-brand" href="#">{{ navbar_title }}</a>
+        <a class="navbar-brand" href="/{{ url_prefix }}">{{ navbar_title }}</a>
         {#
         navbar-toggler: makes navbar toggable
         #}

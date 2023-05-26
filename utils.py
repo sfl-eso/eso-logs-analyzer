@@ -7,6 +7,19 @@ from typing import Set, Generator, Union
 _ability_map = None
 
 
+def tqdm(*args, **kwargs):
+    """
+    Wrapper for tqdm that uses the logging_redirect_tqdm functionality to allow logging with tqdm progress bars
+    while maintaining the same tqdm api.
+    See https://tqdm.github.io/docs/contrib.logging/
+    """
+    import tqdm as o_tqdm
+    from tqdm.contrib.logging import logging_redirect_tqdm
+    with logging_redirect_tqdm():
+        for obj in o_tqdm.tqdm(*args, **kwargs):
+            yield obj
+
+
 def get_num_lines(file_name: str) -> int:
     """
     Fast counting of the number of lines in large files (https://stackoverflow.com/a/9631635).

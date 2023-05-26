@@ -88,6 +88,7 @@ class Event(object):
         self._previous = value
         value._next = self
 
+    # TODO: proper span class with __iter__ method and functions to check if an event is in the span and if spans overlap (and to merge them)
     def span(self, other: Event, inclusive: bool = False) -> Generator[Event, None, None]:
         assert isinstance(other, Event), f"Can't create span with non-event object {other}"
         assert self.order_id < other.order_id, f"Can't create span from {self} with {other} that does not have a higher order id"

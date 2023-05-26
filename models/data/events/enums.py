@@ -142,8 +142,8 @@ class DamageType(Enum):
 
 
 class ResourceType(Enum):
-    UNKNOWN0 = "0"
-    UNKNOWN1 = "1"
-    UNKNOWN4 = "4"
-    UNKNOWN5 = "5"
-    UNKNOWN8 = "8"
+    UNKNOWN0 = "0"  # Possibly Shield/Absorption
+    MAGICKA = "1"
+    STAMINA = "4"
+    MAGICKA_AND_STAMINA = "5"  # Only triggered by Molten Whip, so probably mixed cost
+    ULTIMATE = "8"

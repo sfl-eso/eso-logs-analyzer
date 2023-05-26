@@ -1,5 +1,4 @@
 tqdm
 python-json-config
-mdutils
 colour
 Jinja2

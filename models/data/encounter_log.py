@@ -24,7 +24,7 @@ class EncounterLog(Base):
         # Create a dictionary that throws errors if non-existing keys are read
         self._event_dict = dict(event_dict)
 
-        # Meta events
+        # Ensure that there is only a single begin and end log event in this encounter log.
         assert len(self._event_dict[BeginLog.event_type]) == 1, f"More than one {BeginLog.event_type} event in encounterlog!"
         assert len(self._event_dict[EndLog.event_type]) == 1, f"More than one {EndLog.event_type} event in encounterlog!"
         self.begin_log: BeginLog = self._event_dict[BeginLog.event_type][0]
@@ -40,6 +40,8 @@ class EncounterLog(Base):
             event.compute_event_time(self)
             event.resolve_ability_and_effect_info_references(self)
 
+        # Match the span events with their end-counterparts and set the begin and end event fields.
+        self.__match_log_events()
         self.__match_cast_events()
         self._match_unit_events()
 
@@ -61,6 +63,13 @@ class EncounterLog(Base):
         return f"{self.__class__.__name__}(begin={self.begin_log.time}, end={self.end_log.time})"
 
     __repr__ = __str__
+
+    def __match_log_events(self):
+        """
+        Connect the begin and end log events with each other.
+        """
+        self.begin_log.end_log = self.end_log
+        self.end_log.begin_log = self.begin_log
 
     def __match_cast_events(self):
         """
@@ -94,7 +103,7 @@ class EncounterLog(Base):
         # Contains end cast events for which there is no begin cast event with the same cast effect id and ability id
         missing_ability_id_begin_casts: Dict[int, List[EndCast]] = defaultdict(list)
 
-        for cast_effect_id in cast_effect_ids:
+        for cast_effect_id in tqdm(cast_effect_ids, desc="Matching cast events"):
             if cast_effect_id not in begin_event_dict:
                 # The begin cast event for this cast was not recorded.
                 missing_begin_casts.append(cast_effect_id)

@@ -47,14 +47,15 @@ def render_template(template_name: str, context: dict) -> str:
     return template.render(context)
 
 
-def render_to_file(template_name: str, context: dict, output: Union[str, Path], print_message: bool) -> None:
+def render_to_file(template_name: str, context: dict, output: Union[str, Path], print_message: bool = True) -> None:
     if print_message:
         print(f"Rendering template {template_name} to {output}")
+
     with open(output, "w") as out_file:
         out_file.write(render_template(template_name, context))
 
 
-def render_readme(config: Config):
+def render_readme(config: Config, dev_mode: bool = False):
     pages = []
 
     out_path = Path(config.export.path)
@@ -70,16 +71,18 @@ def render_readme(config: Config):
     return render_to_file("readme", {
         "title": config.export.title_prefix,
         "pages": pages,
-        "url_prefix": config.web.url_prefix
+        "url_prefix": config.web.url_prefix,
+        "dev_mode": dev_mode
     }, file_name)
 
 
-def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: Config, tqdm_index: int) -> None:
+def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: Config, tqdm_index: int, dev_mode: bool = False) -> None:
     """
     Analyzes and renders a log as html.
     @param encounter_log: Either a single log or multiple logs that were in a single file.
     @param config: The current configuration.
     @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
+    @param dev_mode: If set, templates are rendered in development mode.
     """
 
     debuffs = sorted([
@@ -115,7 +118,7 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
     log_trial_name = ""
 
     # TODO: group encounters by trial and trial boss (under a separate heading level (h1?))
-    for encounter in tqdm(boss_encounters, desc="Computing boss encounter uptimes"):
+    for encounter in tqdm(boss_encounters, desc="Computing boss encounter uptimes", position=tqdm_index, leave=not tqdm_index):
         # TODO: filter for clears/make bosses configurable
         try:
             # TODO: filter for clears/make bosses configurable
@@ -143,7 +146,8 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
     render_to_file("log", {
         "title": log_title,
         "encounters": encounters_html,
-        "url_prefix": config.web.url_prefix
+        "url_prefix": config.web.url_prefix,
+        "dev_mode": dev_mode
     }, file_name, print_message=not tqdm_index)
 
 

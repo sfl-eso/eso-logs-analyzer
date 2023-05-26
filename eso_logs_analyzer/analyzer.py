@@ -45,9 +45,9 @@ class Analyzer:
         assert self.input_dir.exists(), f"Log file or directory at {self.input_dir} does not exist."
 
     def run(self):
-        def analyze_log(log_file: Path, multiple: bool, config: Config, tqdm_index):
-            logs = EncounterLog.parse_log(log_file, multiple=multiple, tqdm_index=tqdm_index)
-            render_log(logs, config, tqdm_index=tqdm_index)
+        def analyze_log(log_file: Path, multiple: bool, config: Config, tqdm_index: int, dev_mode: bool):
+            logs = EncounterLog.parse_log(file=log_file, multiple=multiple, tqdm_index=tqdm_index)
+            render_log(encounter_log=logs, config=config, tqdm_index=tqdm_index, dev_mode=dev_mode)
 
         # Copy the web resources (javascript and css) to target dir.
         copy_tree(str(self.project_root / self.config.web.resource_path), self.config.export.path)
@@ -55,7 +55,7 @@ class Analyzer:
         input_files = []
         if self.input_dir.is_file():
             # Process single log file
-            analyze_log(self.input_dir, self.read_multiple_logs_in_file, self.config, 0)
+            analyze_log(self.input_dir, self.read_multiple_logs_in_file, self.config, tqdm_index=0, dev_mode=self.cli_args.dev)
         else:
             input_files = list([file for file in self.input_dir.iterdir() if file.is_file() and file.suffix == self.__LOG_FILE_SUFFIX])
             parallel_task = ParallelTask("Analyze log files",
@@ -64,12 +64,13 @@ class Analyzer:
                                          task_function=analyze_log,
                                          task_function_kwargs={
                                              "multiple": self.read_multiple_logs_in_file,
-                                             "config": self.config
+                                             "config": self.config,
+                                             "dev_mode": self.cli_args.dev
                                          },
                                          set_tqdm_index=True)
             parallel_task.execute()
 
-        render_readme(self.config)
+        render_readme(self.config, dev_mode=self.cli_args.dev)
 
         # TODO: trial profiles that can be used/configured via config
         # TODO: gather gear changed events for player before each combat encounter and dynamically check who is using Z'ens to compute its uptime

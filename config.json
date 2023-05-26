@@ -2,7 +2,7 @@
     "ability_map": "ability_map.json",
     "logging": {
         "file": "debug.log",
-        "console_level": "WARNING",
+        "console_level": "INFO",
         "file_level": "DEBUG"
     }
 }

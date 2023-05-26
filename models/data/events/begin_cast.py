@@ -66,10 +66,13 @@ class BeginCast(TargetEvent, SpanCast):
 
         self.duration = timedelta(milliseconds=int(duration_in_ms))
         self.channeled = self._convert_boolean(channeled, field_name="channeled")
+        # Unique id identifying this cast event.
         self.cast_effect_id = int(cast_effect_id)
 
         self.end_cast: EndCast = None
-        self.duplicate_end_casts: List[EndCast] = []
+        # These end cast events have a different ability id than this begin cast event.
+        # This may happen when different effects with different ability ids are applied by the same begin cast event.
+        self.orphaned_end_casts: List[EndCast] = []
 
     @property
     def completed(self):

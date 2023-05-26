@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Type, Set
 
 from utils import read_csv, get_num_lines, tqdm
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved
-from .events.enums import UnitType
+from .events.enums import UnitType, CastStatus
 from ..base import Base
 
 
@@ -40,7 +40,7 @@ class EncounterLog(Base):
             event.compute_event_time(self)
             event.resolve_ability_and_effect_info_references(self)
 
-        self._match_cast_events()
+        self.__match_cast_events()
         self._match_unit_events()
 
         # # Combat encounters
@@ -62,43 +62,136 @@ class EncounterLog(Base):
 
     __repr__ = __str__
 
-    def _match_cast_events(self):
+    def __match_cast_events(self):
         """
         Match casts that are separated into a being and end cast event.
         """
-        # The cache will be used to confirm that every cast was ended, and the dict is just needed for lookups of duplicate end cast events
-        begin_cast_cache: Dict[str, BeginCast] = {}
-        begin_cast_dict: Dict[str, BeginCast] = {}
 
-        for event in tqdm(self._events, desc="Matching cast events"):
-            if isinstance(event, BeginCast):
-                # TODO: there can be multiple begin cast events with the same ids
-                # TODO: use the time to match them up
-                begin_cast_cache[event.cast_effect_id] = event
-                begin_cast_dict[event.cast_effect_id] = event
-            elif isinstance(event, EndCast):
-                try:
-                    begin_event: BeginCast = begin_cast_dict[event.cast_effect_id]
-                except KeyError:
-                    self.logger.warning(f"No begin cast for end cast {event}")
+        def structure_cast_events(cast_type: Type[Event]) -> dict:
+            """
+            Structures the cast events in a format cast_effect_id -> ability_id -> list of events
+            """
+            structured_events: Dict[int, Dict[int, List[Event]]] = defaultdict(lambda: defaultdict(list))
+            for cast_event in self._event_dict[cast_type.event_type]:
+                structured_events[cast_event.cast_effect_id][cast_event.ability_id].append(cast_event)
+            # Remove defaultdict functionality
+            return {cast_effect_id: dict(data) for cast_effect_id, data in structured_events.items()}
+
+        def match_events(begin_cast: BeginCast, end_cast: EndCast):
+            """
+            Sets the appropriate fields to match two events
+            """
+            begin_cast.end_cast = end_cast
+            end_cast.begin_casts.append(begin_cast)
+
+        begin_event_dict: Dict[int, Dict[int, List[BeginCast]]] = structure_cast_events(BeginCast)
+        end_event_dict: Dict[int, Dict[int, List[EndCast]]] = structure_cast_events(EndCast)
+
+        cast_effect_ids: Set[int] = set(begin_event_dict.keys()).union(set(end_event_dict.keys()))
+
+        missing_end_casts = []
+        missing_begin_casts = []
+        # Contains end cast events for which there is no begin cast event with the same cast effect id and ability id
+        missing_ability_id_begin_casts: Dict[int, List[EndCast]] = defaultdict(list)
+
+        for cast_effect_id in cast_effect_ids:
+            if cast_effect_id not in begin_event_dict:
+                # The begin cast event for this cast was not recorded.
+                missing_begin_casts.append(cast_effect_id)
+                continue
+
+            if cast_effect_id not in end_event_dict:
+                # The end cast event for this cast was not recorded.
+                missing_end_casts.append(cast_effect_id)
+                continue
+
+            ability_ids: Set[int] = set(begin_event_dict[cast_effect_id].keys()).union(set(end_event_dict[cast_effect_id].keys()))
+
+            for ability_id in ability_ids:
+                if ability_id not in begin_event_dict[cast_effect_id]:
+                    # This case happens when a cast applies multiple ability ids that have separate end cast events.
+                    missing_ability_id_begin_casts[cast_effect_id].extend(end_event_dict[cast_effect_id][ability_id])
                     continue
-                event.begin_cast = begin_event
 
-                if event.ability_id == begin_event.ability_id:
-                    if begin_event.end_cast is not None:
-                        self.logger.error(f"Multiple end cast events with matching ability id for {begin_event}")
-                        begin_event.duplicate_end_casts.append(event)
+                if ability_id not in end_event_dict[cast_effect_id]:
+                    self.logger.error(f"No end cast event found for cast effect id {cast_effect_id} and ability id {ability_id}")
+                    continue
+
+                begin_events = begin_event_dict[cast_effect_id][ability_id]
+                end_events = end_event_dict[cast_effect_id][ability_id]
+                if len(begin_events) == 1 and len(end_events) == 1:
+                    # There is only a single begin event and a single end event for this cast and ability.
+                    match_events(begin_events[0], end_events[0])
+                elif len(begin_events) > 1 and len(end_events) == 1:
+                    # There are multiple begin casts that share an end cast.
+                    # This is the case with actions that trigger multiple cast events with different effects that all finished with the same state.
+                    for begin_event in begin_events:
+                        match_events(begin_event, end_events[0])
+                elif len(begin_events) == 1 and len(end_events) > 1:
+                    # Sometimes there are cancelled and completed end cast events for the same begin cast.
+                    # Ignore the cancelled event cast in this case
+                    completed_end_events = [event for event in end_events if event.status == CastStatus.COMPLETED]
+                    if len(completed_end_events) > 0:
+                        end_event = max(completed_end_events, key=Event.sort_key)
+                        match_events(begin_events[0], end_event)
                     else:
-                        begin_event.end_cast = event
-                else:
-                    begin_event.duplicate_end_casts.append(event)
+                        # This case should not happen, but handle it in case it does
+                        self.logger.error(f"No completed cast event found for cast effect id {cast_effect_id} with multiple end events")
+                        end_event = max(end_events, key=Event.sort_key)
+                        match_events(begin_events[0], end_event)
+                elif len(begin_events) == 2 and len(end_events) == 2:
+                    # Two casts are triggered by the same action and they finish in different states.
+                    # The begin cast event with the shorter cast duration was finished and the one with the longer duration was cancelled.
+                    begin_events = sorted(begin_events, key=lambda e: e.duration)
+                    completed_begin_event = begin_events[0]
+                    cancelled_begin_event = begin_events[1]
+                    completed_end_event = [event for event in end_events if event.status == CastStatus.COMPLETED][0]
+                    cancelled_end_event = [event for event in end_events if event.status != CastStatus.COMPLETED][0]
+                    match_events(completed_begin_event, completed_end_event)
+                    match_events(cancelled_begin_event, cancelled_end_event)
 
-        for begin_event in begin_cast_cache.values():
-            if begin_event.end_cast is None and len(begin_event.duplicate_end_casts) == 0:
-                self.logger.warning(f"No end cast found for begin cast {begin_event}")
-            elif begin_event.end_cast is None:
-                self.logger.error(
-                    f"No end cast found with matching ability id found for begin cast {begin_event} but {len(begin_event.duplicate_end_casts)} other end cast events were found")
+                    if len(begin_events) > 2:
+                        self.logger.error(f"More than 2 events for mBmE effect cast id {cast_effect_id} and ability id {ability_id}")
+                elif len(begin_events) == len(end_events):
+                    # There are more than two different finished states for the end cast events.
+                    end_cast_states = [event.status for event in end_events]
+                    self.logger.error(
+                        f"End cast events have more than two different result states ({end_cast_states}) for cast effect id {cast_effect_id} and ability id {ability_id}")
+                else:
+                    # There are different amounts of begin and end cast events. This should never occur
+                    self.logger.error(f"Different amounts of begin and end cast events found for cast effect id {cast_effect_id} and ability id {ability_id}")
+
+        if missing_begin_casts:
+            self.logger.info(f"{len(missing_begin_casts)} end cast events did not have matching begin cast events.")
+
+        if missing_end_casts:
+            self.logger.info(f"{len(missing_end_casts)} begin cast events did not have matching end cast events.")
+
+        if missing_ability_id_begin_casts:
+            # Match end cast events for which there was no matching ability id with begin cast events of the same effect cast id but a different ability id.
+            # Only match up end cast events, if there is only a single viable begin cast event that it can be attached to.
+            num_unmatched_orphaned_end_casts = 0
+            for cast_effect_id, orphaned_end_casts in missing_ability_id_begin_casts.items():
+                ability_id_to_begin_cast_dict = begin_event_dict[cast_effect_id]
+                if len(ability_id_to_begin_cast_dict) == 1:
+                    # Only match orphaned end cast event if there is only a single ability id in the begin casts dict for this cast effect id
+                    ability_id = list(ability_id_to_begin_cast_dict.keys())[0]
+                    begin_cast_events = ability_id_to_begin_cast_dict[ability_id]
+                    if len(begin_cast_events) == 1:
+                        # Only match orphaned end cast event if there is only a single begin cast event candidate
+                        begin_cast_event = begin_cast_events[0]
+                        begin_cast_event.orphaned_end_casts.extend(orphaned_end_casts)
+                        for end_cast_event in orphaned_end_casts:
+                            end_cast_event.begin_casts.append(begin_cast_event)
+                    else:
+                        num_unmatched_orphaned_end_casts += 1
+                        self.logger.debug(f"Skipping orphaned end casts for cast effect id {cast_effect_id} and ability id {ability_id} due to multiple viable begin cast events")
+                else:
+                    num_unmatched_orphaned_end_casts += 1
+                    self.logger.debug(f"Skipping orphaned end casts for cast effect id {cast_effect_id} due to multiple viable begin cast ability ids")
+
+            if num_unmatched_orphaned_end_casts:
+                self.logger.info(f"{num_unmatched_orphaned_end_casts} orphaned end cast events could not be matched to begin cast events with the same cast effect id.")
 
     def _match_unit_events(self):
         """

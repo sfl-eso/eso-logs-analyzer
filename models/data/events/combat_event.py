@@ -71,4 +71,5 @@ class CombatEvent(TargetEvent):
         self.overflow = int(overflow)
         # Something like 'MAGICKA', 'INVALID'
         self.resource_type: ResourceType = ResourceType(resource_type)
+        # Unique id identifying the cast event that applied this combat event.
         self.cast_effect_id = int(cast_effect_id)

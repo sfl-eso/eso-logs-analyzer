@@ -34,7 +34,7 @@ def main(args: Namespace):
     # TODO: interactive selection?
     # ability_map = assert_file_exists(config.ability_map)
     log = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
-
+    log
     # encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in
     #                                tqdm(log.combat_encounters, desc="Processing encounters")]
     # for encounter in encounters:

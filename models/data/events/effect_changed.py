@@ -56,6 +56,7 @@ class EffectChanged(TargetEvent):
                                             target_heading_radians=target_heading_radians)
         self.status: EffectChangedStatus = EffectChangedStatus[status]
         self.stack_count = int(stack_count)
+        # Unique id identifying the cast event that caused this effect changed event.
         self.cast_effect_id = int(cast_effect_id)
         self.player_initiated_remove_cast_track_id = player_initiated_remove_cast_track_id
 

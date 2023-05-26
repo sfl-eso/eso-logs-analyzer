@@ -47,6 +47,7 @@ def get_logger(name: str, console_level=None, file_level=None):
     logger.setLevel(console_level)
 
     # Also log to the log file with a different level
+    # TODO: log level for file handler does not work properly
     file_handler = logging.FileHandler(__LOG_CONFIG.file)
     file_handler.setLevel(file_level)
     file_handler.setFormatter(__log_formatter())

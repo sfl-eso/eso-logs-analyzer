@@ -1,5 +1,6 @@
 # Custom
 data/*.log
+test.py
 
 # ---> Python
 # Byte-compiled / optimized / DLL files

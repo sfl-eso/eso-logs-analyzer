@@ -79,6 +79,9 @@ class PlayerInfo(Event):
 
 
 class UnitAdded(Event):
+    """
+    Represent the spawn of a unit. Can be player, enemy or pet.
+    """
     event_type: str = "UNIT_ADDED"
 
     def __init__(self,
@@ -134,49 +137,6 @@ class UnitAdded(Event):
                f"unit_removed={self.unit_removed is not None})"
 
     __repr__ = __str__
-
-    def damage_done(self, encounter: BeginCombat, unit: UnitAdded):
-        from .ability_events import CombatEvent
-
-        def target_filter(event):
-            return isinstance(event, CombatEvent) and event.target_unit == unit
-
-        def sort_and_dps(data: dict, duration: timedelta):
-            damage_done = dict(sorted(data.items(), key=lambda t: -t[1]))
-            dps = {key: damage / duration.total_seconds() for key, damage in damage_done.items()}
-            return damage_done, dps
-
-        damage_events: List[CombatEvent] = [event for event in self.combat_events_source[encounter] if target_filter(event)]
-        pet_damage_events: List[CombatEvent] = chain(*[[event for event in pet.combat_events_source[encounter] if target_filter(event)] for pet in self.pets[encounter]])
-        all_damage_events: List[CombatEvent] = damage_events + list(pet_damage_events)
-        damage_done = 0
-        damage_done_by_type = defaultdict(int)
-        damage_done_by_ability = defaultdict(int)
-        damage_done_by_ability_name = defaultdict(int)
-        for event in all_damage_events:
-            damage_done += event.damage
-            damage_done_by_ability[event.ability] += event.damage
-            damage_done_by_ability_name[event.ability.name] += event.damage
-            damage_done_by_type[event.damage_type] += event.damage
-
-        duration = encounter.end_combat.time - encounter.time
-        dps = damage_done / duration.total_seconds()
-
-        damage_done_by_type, dps_by_type = sort_and_dps(damage_done_by_type, duration)
-        damage_done_by_ability, dps_by_ability = sort_and_dps(damage_done_by_ability, duration)
-        damage_done_by_ability_name, dps_by_ability_name = sort_and_dps(damage_done_by_ability_name, duration)
-
-        return {
-            "dps": dps,
-            "damage_done": damage_done,
-            "dps_by_type": dps_by_type,
-            "damage_by_type": damage_done_by_type,
-            "dps_by_ability": dps_by_ability,
-            "damage_by_ability": damage_done_by_ability,
-            "dps_by_ability_name": dps_by_ability_name,
-            "damage_by_ability_name": damage_done_by_ability_name,
-            "duration": duration
-        }
 
 
 class UnitRemoved(Event):

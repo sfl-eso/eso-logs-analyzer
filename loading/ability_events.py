@@ -98,6 +98,9 @@ class TargetEvent(Event):
         self.unit: UnitAdded = None
         self.target_unit: UnitAdded = None
 
+    def filter_by_type_and_target(self, event_type, target: UnitAdded):
+        return isinstance(self, event_type) and self.target_unit == target
+
 
 class BeginCast(TargetEvent):
     event_type: str = "BEGIN_CAST"

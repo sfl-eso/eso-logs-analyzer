@@ -1,11 +1,11 @@
 from argparse import Namespace, ArgumentParser
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 from python_json_config import ConfigBuilder, Config
 
-from trials.kynes_aegis import find_boss_encounters
 from loading import EncounterLog
+from processing import Encounter
 
 
 def cli_args() -> Namespace:
@@ -14,6 +14,7 @@ def cli_args() -> Namespace:
     parser.add_argument("log", type=str, help="The log file that is analyzed")
     parser.add_argument("--config", default="./config.json", type=str, help="Configuration file (JSON).")
     return parser.parse_args()
+
 
 def assert_file_exists(path: Union[str, Path]) -> Path:
     path = Path(path)
@@ -31,7 +32,12 @@ def main(args: Namespace):
     # TODO: interactive selection?
     ability_map = assert_file_exists(config.ability_map)
     log = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
-    log
+
+    encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in log.combat_encounters]
+    for encounter in encounters:
+        print(encounter)
+        print(encounter.dps())
+
     # boss_encounters = find_boss_encounters(log)
     # print(f"Evaluating log on {log._begin_log.time}")
     # all_uptimes = {}

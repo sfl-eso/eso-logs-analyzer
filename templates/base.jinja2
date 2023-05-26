@@ -1,5 +1,6 @@
 {# Input vars:
 dev_mode: If set to True, we are in dev mode. Include resources via URL instead of locally, since browsers do not allow loading of data from file urls.
+navbar_title: title of navbar
 #}
 
 <!DOCTYPE html>
@@ -24,6 +25,66 @@ dev_mode: If set to True, we are in dev mode. Include resources via URL instead 
 </head>
 
 <body>
+
+{#
+navbar: make this a bootstrap navbar
+navbar-expand-lg: allow responsive collapsing
+bg-body: background color
+#}
+<nav class="navbar navbar-expand-lg bg-body">
+    <div class="container-fluid">
+        {#
+        navbar-brand: allows customization for custom company, product, or project name.
+        #}
+        <a class="navbar-brand" href="#">{{ navbar_title }}</a>
+        {#
+        navbar-toggler: makes navbar toggable
+        #}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        {#
+        collapse: collapsible content
+        navbar-collapse: groups and hides navbar contents by a parent breakpoint
+        #}
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                {# Link to home page #}
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="#">Home</a>
+                </li>
+                {# Further links #}
+                {#                    <li class="nav-item">#}
+                {#                        <a class="nav-link" href="#">Link</a>#}
+                {#                    </li>#}
+                {# A dropdown menu #}
+                {#                    <li class="nav-item dropdown">#}
+                {#                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">#}
+                {#                            Dropdown#}
+                {#                        </a>#}
+                {#                        <ul class="dropdown-menu">#}
+                {#                            <li><a class="dropdown-item" href="#">Action</a></li>#}
+                {#                            <li><a class="dropdown-item" href="#">Another action</a></li>#}
+                {#                            <li>#}
+                {#                                <hr class="dropdown-divider">#}
+                {#                            </li>#}
+                {#                            <li><a class="dropdown-item" href="#">Something else here</a></li>#}
+                {#                        </ul>#}
+                {#                    </li>#}
+                {# A disabled element #}
+                {#                    <li class="nav-item">#}
+                {#                        <a class="nav-link disabled">Disabled</a>#}
+                {#                    </li>#}
+            </ul>
+            {# A search form #}
+            {#                <form class="d-flex" role="search">#}
+            {#                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">#}
+            {#                    <button class="btn btn-outline-success" type="submit">Search</button>#}
+            {#                </form>#}
+        </div>
+    </div>
+</nav>
 
 {# Content is set by defining the content block in child templates #}
 {% block content %}{{ content }}{% endblock content %}

@@ -7,7 +7,8 @@
     "export": {
         "path": "/path/to/repo/that/deploys/my/html/pages",
         "file_suffix": "my_raid_group",
-        "title_prefix": "My Raid Group"
+        "title_prefix": "My Raid Group",
+        "navbar_title": "My Raid Group"
     },
     "web": {
         "url_prefix": "prefix/of/the/url/path",

@@ -69,6 +69,7 @@ def render_readme(config: Config, dev_mode: bool = False):
 
     file_name = f"{config.export.path}/index.html"
     return render_to_file("readme", {
+        "navbar_title": config.export.navbar_title,
         "title": config.export.title_prefix,
         "pages": pages,
         "url_prefix": config.web.url_prefix,
@@ -144,6 +145,7 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
     file_name = f"{config.export.path}/{log_trial_name.lower()}_{timestamp}_{config.export.file_suffix}.html"
 
     render_to_file("log", {
+        "navbar_title": config.export.navbar_title,
         "title": log_title,
         "encounters": encounters_html,
         "url_prefix": config.web.url_prefix,

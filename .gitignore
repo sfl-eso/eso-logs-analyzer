@@ -3,6 +3,8 @@ data/*.log
 test.py
 output
 
+*.html
+
 # ---> Python
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import timedelta
 from typing import TYPE_CHECKING, List, Dict
 
@@ -62,16 +63,22 @@ class CombatEncounter(Base):
 
         return [unit for unit, was_damaged in active_units.items() if was_damaged]
 
-    def compute_debuff_uptimes(self, ability_name: str, only_boss: bool = True, unit_names: List[str] = None) -> List[EffectUptime]:
+    def compute_debuff_uptimes(self, ability_names: List[str], only_boss: bool = True, unit_names: List[str] = None) -> Dict[UnitAdded, List[EffectUptime]]:
+        uptime_dict: Dict[UnitAdded, List[EffectUptime]] = defaultdict(list)
+
         if unit_names:
             units = [unit for unit in self.hostile_units if unit.name in unit_names]
         else:
             units = self.boss_units if only_boss else self.hostile_units
 
-        uptimes = []
         for unit in units:
-            uptimes.append(EffectUptime(self, unit, ability_name))
-        return uptimes
+            for ability_name in sorted(ability_names):
+                if ability_name not in self.encounter_log.valid_ability_names:
+                    self.logger.error(f"No ability with name '{ability_name}' found. Can't compute uptime!")
+                    continue
+                uptime_dict[unit].append(EffectUptime(self, unit, ability_name))
+
+        return dict(uptime_dict)
 
     @classmethod
     def load(cls, encounter_log: EncounterLog) -> List[CombatEncounter]:

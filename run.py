@@ -27,16 +27,14 @@ def assert_file_exists(path: Union[str, Path]) -> Path:
 
 
 def print_uptime(effect_uptime: EffectUptime):
-    result = effect_uptime.compute_uptime()
-    if result:
-        ability, uptime, total_time = result
-        relative_uptime = round(uptime / total_time, 4)
+    ability, uptime, total_time = effect_uptime.compute_uptime()
+    relative_uptime = round(uptime / total_time, 4)
 
-        message = ""
-        message += f"Uptime for {ability.name} ({ability.ability_id}) "
-        message += f"on {effect_uptime.target_unit.name} ({effect_uptime.target_unit.unit_id}): {relative_uptime} "
-        message += f"(uptime: {round(uptime, 4)}, target_uptime: {round(total_time, 4)})"
-        print(message)
+    message = ""
+    message += f"Uptime for {ability.name} ({ability.ability_id}) "
+    message += f"on {effect_uptime.target_unit.name} ({effect_uptime.target_unit.unit_id}): {relative_uptime} "
+    message += f"(uptime: {round(uptime, 4)}, target_uptime: {round(total_time, 4)})"
+    print(message)
 
 
 def main(args: Namespace):
@@ -64,8 +62,8 @@ def main(args: Namespace):
 
     oax_encounters = [encounter for encounter in combat_encounters if encounter.is_boss_encounter and encounter.get_boss() == Rockgrove.OAXILTSO]
     encounter = oax_encounters[-1]
-    for debuff in debuffs:
-        for uptime in encounter.compute_debuff_uptimes(debuff, only_boss=True):
+    for unit, uptimes in encounter.compute_debuff_uptimes(debuffs, unit_names=["Oaxiltso", "Havocrel Annihilator"]).items():
+        for uptime in uptimes:
             print_uptime(uptime)
 
     # TODO: encode data in config?

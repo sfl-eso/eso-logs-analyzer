@@ -33,6 +33,7 @@ class EncounterLog(Base):
 
         # Gather events by their identifying ids
         self.ability_infos: Dict[int, AbilityInfo] = {ability_info.ability_id: ability_info for ability_info in self._event_dict[AbilityInfo.event_type]}
+        self.valid_ability_names = set([ability.name for ability in self.ability_infos.values()])
         self.effect_infos: Dict[int, EffectInfo] = {effect_info.ability_id: effect_info for effect_info in self._event_dict[EffectInfo.event_type]}
         self.player_unit_added: Dict[int, UnitAdded] = {unit.unit_id: unit for unit in self._event_dict[UnitAdded.event_type]
                                                         if unit.unit_type == UnitType.PLAYER}

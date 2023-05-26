@@ -190,6 +190,12 @@ class BeginCombat(Event):
         new_encounter.events = list(EventSpan(start, end))
         return new_encounter
 
+    def get_hostile_unit(self, name: str) -> UnitAdded:
+        for unit in self.hostile_units:
+            if unit.name == name:
+                return unit
+        raise KeyError(f"Hostile unit with name {name} does not occur in encounter {self}")
+
     # def compute_uptimes(self, log: EncounterLog):
     #     # Keep track of data in the form of Dict(unit_id -> Dict(ability_id -> object))
     #     tracker = defaultdict(dict)

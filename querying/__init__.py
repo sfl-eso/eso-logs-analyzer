@@ -1,9 +1,12 @@
 from .event_span import EventSpan
-from .debuff_span import DebuffSpan
+from .effect_span import EffectSpan, EffectUnitSpan
 from .player_damage_statistics import print_encounter_stats
+from .debuff_uptimes import debuff_target_unit
 
 __all__ = [
     "EventSpan",
-    "DebuffSpan",
-    "print_encounter_stats"
+    "EffectSpan",
+    "EffectUnitSpan",
+    "print_encounter_stats",
+    "debuff_target_unit"
 ]

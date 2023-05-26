@@ -13,6 +13,8 @@ class EventSpan(object):
     def __next__(self):
         current = self._current
         while not self._filter_event(current):
+            if current.order_id > self.end.order_id:
+                raise StopIteration
             current = current.next
 
         if current.order_id > self.end.order_id:

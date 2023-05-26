@@ -1,4 +1,4 @@
-from models import BeginCombat, UnitAdded
+from loading import BeginCombat, UnitAdded
 
 
 def player_dps_for_encounter(encounter: BeginCombat):

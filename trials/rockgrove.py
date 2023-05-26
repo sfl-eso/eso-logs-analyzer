@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import List, Dict
 
-from models import EncounterLog, BeginCombat
+from loading import EncounterLog, BeginCombat
 
 OAXILTSO = "Oaxiltso"
 FLAME_HERALD_BAHSEI = "Flame-Herald Bahsei"

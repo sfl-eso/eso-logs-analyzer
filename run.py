@@ -5,7 +5,7 @@ from typing import Union
 from python_json_config import ConfigBuilder, Config
 
 from trials.kynes_aegis import find_boss_encounters
-from models import EncounterLog
+from loading import EncounterLog
 
 
 def cli_args() -> Namespace:

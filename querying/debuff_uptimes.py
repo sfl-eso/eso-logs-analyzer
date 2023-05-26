@@ -3,7 +3,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict
 
-from models import BeginCombat, UnitAdded, EncounterLog
+from loading import BeginCombat, UnitAdded, EncounterLog
 
 from .effect_span import EffectUnitSpan
 

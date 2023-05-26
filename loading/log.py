@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 from tqdm import tqdm
 
 from logger import logger
-from models import Event, AbilityInfo, BeginLog, EndLog, BeginCombat, EndCombat, EffectInfo, PlayerInfo, UnitAdded, \
+from loading import Event, AbilityInfo, BeginLog, EndLog, BeginCombat, EndCombat, EffectInfo, PlayerInfo, UnitAdded, \
     UnitRemoved, UnitChanged, TrialInit, TargetEvent, SoulGemResurectionAcceptedEvent, BeginCast, EndCast
 from utils import read_csv
 

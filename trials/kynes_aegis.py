@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import List, Dict
 
-from models import EncounterLog, BeginCombat
+from loading import EncounterLog, BeginCombat
 
 YANDIR_THE_BUTCHER = "Yandir the Butcher"
 CAPTAIN_VROL = "Captain Vrol"

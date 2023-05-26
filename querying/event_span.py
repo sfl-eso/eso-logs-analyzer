@@ -1,4 +1,4 @@
-from models import Event
+from loading import Event
 
 
 class EventSpan(object):

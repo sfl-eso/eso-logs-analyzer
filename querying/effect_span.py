@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Union, List
 
 from logger import logger
-from models import Event, AbilityInfo, EffectChanged, UnitAdded, BeginCombat
+from loading import Event, AbilityInfo, EffectChanged, UnitAdded, BeginCombat
 
 from .event_span import EventSpan
 

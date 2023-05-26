@@ -53,6 +53,8 @@ def __get_logger(name: str):
 
 def get_logger(name: str, console_level=None, file_level=None):
     global __LOG_CONFIG
+    assert __LOG_CONFIG is not None, f"Trying to load logger {name} before loggers were initialized."
+
     # logging.getLevelName maps from level to name and from name to level
     # Log level 0 indicates the log level is unset. In that we also set the level to the pre-defined one
     console_level = console_level or logging.getLevelName(__LOG_CONFIG.console_level)
@@ -77,6 +79,8 @@ def get_logger(name: str, console_level=None, file_level=None):
 
 def get_event_logger(name: str, console_level=None):
     global __LOG_CONFIG
+    assert __LOG_CONFIG is not None, f"Trying to load logger {name} before loggers were initialized."
+    
     # logging.getLevelName maps from level to name and from name to level
     # Log level 0 indicates the log level is unset. In that we also set the level to the pre-defined one
     console_level = console_level or logging.getLevelName(__LOG_CONFIG.console_level)

@@ -61,6 +61,7 @@ def main(args: Namespace):
     # TODO: auto collapse encounters and mark the boss hp % when we died (or cleared the encounter)
 
     # TODO: store metadata for generating of index.html
+    # TODO: add table with more metadata in readme (has to be computed when generating logs and stored in metadata)
     # TODO: add navbar and link to github repo to base template (footer) with disclaimer
 
 

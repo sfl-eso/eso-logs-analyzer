@@ -3,13 +3,13 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING, List, Dict
 
-from trials import get_boss_for_trial
-from utils import tqdm
 from .unit import Unit
 from ..base import Base
 from ..data import EncounterLog, EventSpan
 from ..data.events import UnitAdded, EndCombat, BeginCombat, Event, CombatEvent, UnitChanged, EffectChanged
 from ..data.events.enums import Hostility
+from ...trials import get_boss_for_trial
+from ...utils import tqdm
 
 if TYPE_CHECKING:
     pass

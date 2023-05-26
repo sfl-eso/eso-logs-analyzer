@@ -5,9 +5,9 @@ from typing import Union
 
 from python_json_config import ConfigBuilder, Config
 
-from log import init_loggers
-from models.data import EncounterLog
-from rendering import render_log, render_readme
+from eso_logs_analyzer.log import init_loggers
+from eso_logs_analyzer.models.data import EncounterLog
+from eso_logs_analyzer.rendering import render_log, render_readme
 
 
 def cli_args() -> Namespace:

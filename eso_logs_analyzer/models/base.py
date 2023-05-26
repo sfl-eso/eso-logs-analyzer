@@ -1,6 +1,6 @@
 from logging import Logger
 
-from log import get_logger, get_event_logger
+from ..log import get_logger, get_event_logger
 
 
 class Base(object):

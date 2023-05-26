@@ -1,7 +1,8 @@
 from collections import defaultdict
 from typing import List, Dict
 
-from loading import EncounterLog, BeginCombat
+from ..models.data import EncounterLog
+from ..models.data.events import BeginCombat
 
 OAXILTSO = "Oaxiltso"
 FLAME_HERALD_BAHSEI = "Flame-Herald Bahsei"
@@ -17,4 +18,3 @@ def find_boss_encounters(encounter_log: EncounterLog) -> Dict[str, List[BeginCom
             if encounter.is_boss_encounter and boss in [b.name for b in encounter.boss_units]:
                 boss_encounters[boss].append(encounter)
     return dict(boss_encounters)
-

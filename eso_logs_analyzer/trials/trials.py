@@ -1,8 +1,12 @@
-from enum import Enum
-from typing import List
+from __future__ import annotations
 
-from models.data.events.enums import TrialId
-from models.postprocessing.unit import Unit
+from enum import Enum
+from typing import List, TYPE_CHECKING
+
+from ..models.data.events.enums import TrialId
+
+if TYPE_CHECKING:
+    from ..models.postprocessing import Unit
 
 
 class Rockgrove(Enum):

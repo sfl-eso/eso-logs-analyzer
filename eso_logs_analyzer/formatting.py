@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from datetime import timedelta, datetime
-from typing import Union, Tuple
+from typing import Union, Tuple, TYPE_CHECKING
 
 from colour import Color
 
-from models.postprocessing import CombatEncounter
+if TYPE_CHECKING:
+    from .models.postprocessing import CombatEncounter
 
 __SECONDS_IN_A_MINUTE = 60
 __RED = Color("#ffaaaa")

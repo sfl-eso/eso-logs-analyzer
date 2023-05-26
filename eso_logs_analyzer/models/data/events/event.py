@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Type, Dict, TYPE_CHECKING, Tuple
 
-from utils import all_subclasses
 from .enums import BooleanType
 from ...base import Base
+from ....utils import all_subclasses
 
 if TYPE_CHECKING:
     from ..encounter_log import EncounterLog

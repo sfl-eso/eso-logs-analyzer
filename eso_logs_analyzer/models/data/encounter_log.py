@@ -4,11 +4,11 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Union, List, Dict, Type, Set
 
-from utils import read_csv, get_num_lines, tqdm
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
     TargetEvent
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
+from ...utils import read_csv, get_num_lines, tqdm
 
 
 class EncounterLog(Base):

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from utils import parse_epoch_time
 from .enums import TrialId
 from .event import Event
 from .span_event import SpanCast
+from ....utils import parse_epoch_time
 
 if TYPE_CHECKING:
     from .end_trial import EndTrial

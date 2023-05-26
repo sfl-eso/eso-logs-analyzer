@@ -7,11 +7,11 @@ from colour import Color
 from jinja2 import FileSystemLoader
 from python_json_config import Config
 
-from formatting import format_time, format_uptime
-from models.data import EncounterLog
-from models.postprocessing import CombatEncounter
-from trials import Rockgrove
-from utils import tqdm
+from ..formatting import format_time, format_uptime
+from ..models.data import EncounterLog
+from ..models.postprocessing import CombatEncounter
+from ..trials import Rockgrove
+from ..utils import tqdm
 
 __TEMPLATE_DIR = "templates/"
 __NAME_KEY = "Name"
@@ -66,7 +66,11 @@ def render_readme(config: Config):
         pages.append((file.stem, name))
 
     file_name = f"{config.export.path}/index.html"
-    return render_to_file("readme", {"title": config.export.title_prefix, "pages": pages, "url_prefix": config.web.url_prefix}, file_name)
+    return render_to_file("readme", {
+        "title": config.export.title_prefix,
+        "pages": pages,
+        "url_prefix": config.web.url_prefix
+    }, file_name)
 
 
 def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: Config):
@@ -128,7 +132,11 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
     timestamp = encounter_log.begin_log.time.strftime("%Y_%m_%d_%H_%M_%S")
     file_name = f"{config.export.path}/{log_trial_name.lower()}_{timestamp}_{config.export.file_suffix}.html"
 
-    return render_to_file("log", {"title": log_title, "encounters": encounters_html, "url_prefix": config.web.url_prefix}, file_name)
+    return render_to_file("log", {
+        "title": log_title,
+        "encounters": encounters_html,
+        "url_prefix": config.web.url_prefix
+    }, file_name)
 
 
 def render_encounter(encounter: CombatEncounter, hostile_units: List[str] = None, debuffs: List[str] = None) -> str:
@@ -157,7 +165,9 @@ def __render_debuff_table(encounter: CombatEncounter, units: List[str] = None, a
 
     units = [unit for unit in encounter.hostile_units if unit.unit.name in units]
 
-    target_active_times = {__NAME_KEY: Cell("Active time of each target")}
+    target_active_times = {
+        __NAME_KEY: Cell("Active time of each target")
+    }
     for unit in units:
         header_row.append(unit.display_str)
         active_time_str = f"{format_time(unit.uptime_begin, encounter)} to {format_time(unit.uptime_end, encounter)} ({format_time(unit.duration)})"
@@ -166,7 +176,9 @@ def __render_debuff_table(encounter: CombatEncounter, units: List[str] = None, a
         target_active_times[unit.display_str] = Cell(value=active_time_str, color=color)
 
     for ability_name in abilities:
-        row = {__NAME_KEY: Cell(ability_name)}
+        row = {
+            __NAME_KEY: Cell(ability_name)
+        }
         for unit in units:
             relative_uptime = unit.relative_uptime_for_ability_name(ability_name)
             total_uptime = unit.uptime_for_ability_name(ability_name)

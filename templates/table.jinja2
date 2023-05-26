@@ -1,0 +1,36 @@
+{# Input vars:
+title: header for the table
+header_row: list of strings that make up the header row
+rows: list of dictionaries pointing from column name to a cell object
+open: boolean if the table should start open or closed
+#}
+{% set details_state = "open" if open else "closed" %}
+
+<details {{ details_state }}>
+    <summary><h3>{{ title }}</h3></summary>
+
+    <table>
+        <thead>
+        <tr>
+            {%- for column_name in header_row -%}
+                <td>{{ column_name }}</td>
+            {%- endfor -%}
+        </tr>
+        </thead>
+
+        {% for row in rows %}
+            <tr>
+                {# Display row items in order of the header #}
+                {% for column_name in header_row %}
+                    {% set cell = row[column_name] %}
+
+                    {% if cell.color is not none %}
+                        <td style="background-color:{{ cell.color.hex }};">{{ cell.value }}</td>
+                    {% else %}
+                        <td>{{ cell.value }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+</details>

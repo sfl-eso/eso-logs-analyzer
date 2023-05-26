@@ -1,10 +1,19 @@
 {% extends "base.jinja2" %}
 
+{# Input vars:
+title: header for the page
+encounters: list of raw html for each encounter
+#}
+
 {% block title %}
-    test title
+    {{ title }}
 {% endblock title %}
 
 
 {% block content %}
-    test content
+
+    {% for encounter in encounters %}
+        {{ encounter }}
+    {% endfor %}
+
 {% endblock content %}

@@ -4,11 +4,9 @@ from typing import Union
 
 from python_json_config import ConfigBuilder, Config
 
-from export import generate_markdown_file
 from log import init_loggers
 from models.data import EncounterLog
-from models.postprocessing import CombatEncounter
-from models.postprocessing.effect_uptime import EffectUptime
+from rendering import render_log
 
 
 def cli_args() -> Namespace:
@@ -26,22 +24,6 @@ def assert_file_exists(path: Union[str, Path]) -> Path:
     return path
 
 
-def print_uptime(effect_uptime: EffectUptime):
-    ability, uptime, total_time = effect_uptime.compute_uptime()
-    relative_uptime = round(uptime / total_time, 4)
-
-    encounter_begin = effect_uptime.combat_encounter.begin.time
-    target_spawn = (effect_uptime.uptime_begin - encounter_begin).total_seconds()
-    target_death = (effect_uptime.uptime_end - encounter_begin).total_seconds()
-    target_uptime = f"from {round(target_spawn, 2)}s to {round(target_death, 2)}s"
-
-    message = ""
-    message += f"Uptime for {ability.name} ({ability.ability_id}) "
-    message += f"on {effect_uptime.target_unit.name} ({effect_uptime.target_unit.unit_id}): {relative_uptime} "
-    message += f"(uptime: {round(uptime, 4)}, target_uptime: {target_uptime})"
-    print(message)
-
-
 def main(args: Namespace):
     """
     https://www.esologs.com/reports/4VcYzBXARm8wp2yk
@@ -50,11 +32,9 @@ def main(args: Namespace):
     init_loggers(config)
 
     log: EncounterLog = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
-    combat_encounters = CombatEncounter.load(log)
-    generate_markdown_file(config, log, combat_encounters)
+    render_log(log, config)
 
     # TODO: trial profiles that can be used/configured via config
-    # TODO: compute uptimes using callbacks on objects to reduce number of times events are iterated
     # TODO: gather gear changed events for player before each combat encounter and dynamically check who is using Z'ens to compute its uptime
     # TODO: compute uptimes/infos about boss mechanics (hit/dodge/cleanse of ability)
     # TODO: replace ability and unit ids in str representation by name and ids

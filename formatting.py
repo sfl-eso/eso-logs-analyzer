@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from typing import Union
+from typing import Union, Tuple
 
 from colour import Color
 
@@ -12,12 +12,12 @@ __INVALID = Color("#ff6ee2")
 __GRADIENT = list(__RED.range_to(__GREEN, steps=101))
 
 
-def __get_color(value: float) -> str:
+def __get_color(value: float) -> Color:
     try:
         value = int(value * 100)
-        return __GRADIENT[value].hex
+        return __GRADIENT[value]
     except IndexError:
-        return __INVALID.hex
+        return __INVALID
 
 
 def __seconds_to_str(seconds: float, decimal_digits: int) -> str:
@@ -38,9 +38,8 @@ def __format_time(seconds: float, decimal_digits: int) -> str:
     return f"{minutes}m{__seconds_to_str(seconds, decimal_digits)}"
 
 
-def format_uptime(relative_uptime: float, max_uptime: float = 1.0) -> str:
-    text = "{:.2%}".format(relative_uptime)
-    return f'<span style="background-color:{__get_color(relative_uptime / max_uptime)}">{text}</span>'
+def format_uptime(relative_uptime: float, max_uptime: float = 1.0) -> Tuple[str, Color]:
+    return "{:.2%}".format(relative_uptime), __get_color(relative_uptime / max_uptime)
 
 
 def format_time(seconds: Union[float, timedelta, datetime], encounter: CombatEncounter = None, decimal_digits: int = 0) -> str:

@@ -21,13 +21,14 @@ class EncounterLog(object):
 
         for line in tqdm(csv_file, desc=f"Parsing log {path}"):
             event = Event.create(count, int(line[0]), line[1], *line[2:])
+            count += 1
             if event is None:
                 continue
             if previous_event is not None:
                 event.previous = previous_event
             events.append(event)
             previous_event = event
-            count += 1
+            # count += 1
             if isinstance(event, EndLog):
                 logs.append(events)
                 if multiple:

@@ -18,7 +18,7 @@ class EndCast(Event):
         self.ability_id = int(ability_id)
         self.status: CastStatus = CastStatus(status)
         self.cast_effect_id = int(cast_effect_id)
-        self.interrupting_ability_id = int(interrupting_ability_id)
-        self.interrupting_unit_id = int(interrupting_unit_id)
+        self.interrupting_ability_id = int(interrupting_ability_id) if interrupting_ability_id is not None else None
+        self.interrupting_unit_id = int(interrupting_unit_id) if interrupting_unit_id is not None else None
 
         self.begin_cast: BeginCast = None

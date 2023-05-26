@@ -61,7 +61,7 @@ class Event(object):
         try:
             instance = subclass(id, *args)
         except Exception as e:
-            print(e)
+            print(f"{e}\tEVENT_TYPE {event_type}\tORDER_ID {order_id}")
             return None
         instance.order_id = order_id
 

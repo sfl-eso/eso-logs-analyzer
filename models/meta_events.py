@@ -17,16 +17,13 @@ if TYPE_CHECKING:
 class BeginLog(Event):
     event_type: str = "BEGIN_LOG"
 
-    # 3,BEGIN_LOG,1614974057994,15,"EU Megaserver","en","eso.live.6.2"
-    def __init__(self, id: int, epoch_time: str, unknown: str, server: str, locale: str, client_version: str):
-        """
-        :param unknown: Some kind of integer
-        """
-        super(BeginLog, self).__init__(id, unknown)
+    def __init__(self, id: int, epoch_time: str, log_version: str, server: str, locale: str, client_version: str):
+        super(BeginLog, self).__init__(id)
         self.time = parse_epoch_time(epoch_time)
         self.server = server
         self.locale = locale
         self.client_version = client_version
+        self.log_version = log_version
 
     def event_time(self, event_id: int) -> datetime:
         return self.time + timedelta(milliseconds=(event_id - self.id))
@@ -40,14 +37,17 @@ class EndLog(Event):
 
 
 class BeginTrial(Event):
+    """
+    Technically the epoch time is "startTimeMS"
+    """
+
     event_type: str = "BEGIN_TRIAL"
 
-    def __init__(self, id: int, unknown: str, epoch_time: str):
-        """
-        :param unknown: Some kind of integer
-        """
-        super(BeginTrial, self).__init__(id, unknown)
+    def __init__(self, id: int, trial_id: str, epoch_time: str):
+        super(BeginTrial, self).__init__(id)
         self.time = parse_epoch_time(epoch_time)
+        self.trial_id = trial_id
+        self.end_trial: EndTrial = None
 
     def event_time(self, event_id: int) -> datetime:
         return self.time + timedelta(milliseconds=(event_id - self.id))
@@ -56,16 +56,13 @@ class BeginTrial(Event):
 class EndTrial(Event):
     event_type: str = "END_TRIAL"
 
-    # 7094915,END_TRIAL,13,6441656,T,78964,0
-    def __init__(self, id: int, unknown1: str, unknown2: str, unknown3: str, unknown4: str, unknown5: str):
-        """
-        :param unknown1: Some kind of integer
-        :param unknown2: Some kind of integer
-        :param unknown3: Some kind of char 'T' (maybe boolean?)
-        :param unknown4: Some kind of integer
-        :param unknown5: Some kind of integer (usually 0)
-        """
+    def __init__(self, id: int, trial_id: str, trial_duration_ms: str, success: str, final_score: str, final_vitality_bonus: str):
         super(EndTrial, self).__init__(id)
+        self.trial_id = trial_id
+        self.trial_duration_ms = int(trial_duration_ms)
+        self.success = success == "T"
+        self.final_score = final_score
+        self.final_vitality_bonus = final_vitality_bonus
 
 
 class BeginCombat(Event):
@@ -181,24 +178,22 @@ class ZoneChanged(Event):
 class MapChanged(Event):
     event_type: str = "MAP_CHANGED"
 
-    def __init__(self, id: int, map_id: str, map_name: str, map_icon: str):
+    def __init__(self, id: int, map_id: str, map_name: str, texture_path: str):
         super(MapChanged, self).__init__(id)
         self.map_id = map_id
         self.map_name = map_name
-        self.map_icon = map_icon
+        self.map_icon = texture_path
 
 
 class TrialInit(Event):
     event_type: str = "TRIAL_INIT"
 
-    def __init__(self, id: int, unknown1, unknown2, unknown3, epoch_time: str, unknown4, unknown5, unknown6):
-        """
-        :param unknown1: Some kind of id
-        :param unknown2: 'T' or 'F'
-        :param unknown3: 'T' or 'F'
-        :param unknown4: Some kind of id (e.g. '161534')
-        :param unknown5: 'T' or 'F'
-        :param unknown6: Integer (e.g., '0')
-        """
-        super(TrialInit, self).__init__(id, unknown1, unknown2, unknown3, unknown4, unknown5, unknown6)
-        self.time = parse_epoch_time(epoch_time)
+    def __init__(self, id: int, trial_id: str, in_progress: str, completed: str, start_time_in_ms: str, duration_in_ms, success: str, final_score: str):
+        super(TrialInit, self).__init__(id)
+        self.trial_id = trial_id
+        self.in_progress = in_progress == "T"
+        self.completed = completed == "T"
+        self.start_time_in_ms = int(start_time_in_ms)
+        self.duration_in_ms = int(duration_in_ms)
+        self.success = success == "T"
+        self.final_score = final_score

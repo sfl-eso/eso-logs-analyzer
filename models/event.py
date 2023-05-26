@@ -4,6 +4,10 @@ from utils import all_subclasses
 
 
 class Event(object):
+    """
+    Base event class for all the different log events.
+    Details for the parameters can be found on: https://esoapi.uesp.net/current/src/ingame/slashcommands/slashcommands_shared.lua.html
+    """
     event_type: str = None
 
     def __init__(self, id: int, *args):

@@ -16,16 +16,21 @@ class PlayerInfo(Event):
 
     def __init__(self, id: int, unit_id: str, *args):
         """
-        :param unknown: Some kind of integer
         :param args: Information about the player split badly by the csv parser
         """
         super(PlayerInfo, self).__init__(id)
         self.unit_id = unit_id
         parsed_data = self._parse_info(",".join(args))
+        # Long term effect ability ids
         self._raw_passives = parsed_data[0]
+        # Long term effect stack counts
         self._raw_passives_active = parsed_data[1]
+        # Equipment info
+        # <equipmentInfo> refers to the following fields for a piece of equipment: slot, id, isCP, level, trait, displayQuality, setId, enchantType, isEnchantCP, enchantLevel, enchantQuality.
         self._raw_gear = parsed_data[2]
+        # Primary ability ids
         self._raw_front_bar = parsed_data[3]
+        # Backup ability ids
         self._raw_back_bar = parsed_data[4]
 
         self.unit: UnitAdded = None
@@ -76,35 +81,23 @@ class UnitAdded(Event):
 
     def __init__(self,
                  id: int,
-                 unit_id,
-                 unit_type,
-                 unknown2,
-                 unknown3,
-                 unknown4,
-                 unknown5,
-                 unknown6,
-                 unknown7,
+                 unit_id: str,
+                 unit_type: str,
+                 is_local_player: str,
+                 player_per_session_id: str,
+                 monster_id: str,
+                 is_boss: str,
+                 class_id: str,
+                 race_id: str,
                  name: str,
                  account: str,
-                 unknown8,
+                 character_id: str,
                  level: str,
                  champion_level: str,
-                 unknown9,
+                 owner_unit_id: str,
                  hostility: str,
-                 unknown10):
-        """
-        :param unknown2: 'T' or 'F'
-        :param unknown3: Incrementing integer for PLAYER, '0' for others
-        :param unknown4: Some kind of id for MONSTER, '0' for others
-        :param unknown5: 'T' or 'F'
-        :param unknown6: Some kind of id for PLAYER, '0' for others
-        :param unknown7: Some kind of id for PLAYER, '0' for others
-        :param unknown8: Some kind of id for PLAYER, '' for others
-        :param unknown9: Some kind of id for MONSTER, '0' for others
-        :param unknown10: 'T' or 'F'
-        """
-        super(UnitAdded, self).__init__(id, unknown2, unknown3, unknown4, unknown5, unknown6, unknown7, unknown8,
-                                        unknown9, unknown10)
+                 is_grouped_with_local_player: str):
+        super(UnitAdded, self).__init__(id)
         self.unit_id = unit_id
         self.unit_type = unit_type
         self.name = name
@@ -112,6 +105,16 @@ class UnitAdded(Event):
         self.level = level
         self.champion_level = champion_level
         self.hostility = hostility
+
+        self.is_local_player = is_local_player == "T"
+        self.player_per_session_id = player_per_session_id
+        self.monster_id = monster_id
+        self.is_boss = is_boss == "T"
+        self.class_id = class_id
+        self.race_id = race_id
+        self.character_id = character_id
+        self.owner_unit_id = owner_unit_id
+        self.is_grouped_with_local_player = is_grouped_with_local_player == "T"
 
         self.unit_changed: List[UnitChanged] = []
         self.unit_removed: UnitRemoved = None
@@ -194,30 +197,29 @@ class UnitChanged(Event):
     def __init__(self,
                  id: int,
                  unit_id: str,
-                 unknown2,
-                 unknown3,
+                 class_id: str,
+                 race_id: str,
                  name: str,
                  account: str,
-                 unknown4,
+                 character_id: str,
                  level: str,
                  champion_level: str,
-                 unknown5,
+                 owner_unit_id: str,
                  hostility: str,
-                 unknown6):
-        """
-        :param unknown2: Some kind of id for PLAYER, '0' for others
-        :param unknown3: Some kind of id for PLAYER, '0' for others
-        :param unknown4: Some kind of id for PLAYER, '0' for others
-        :param unknown5: Often '0'
-        :param unknown6: 'T' or 'F'
-        """
-        super(UnitChanged, self).__init__(id, unknown2, unknown3, unknown4, unknown5, unknown6)
+                 is_grouped_with_local_player: str):
+        super(UnitChanged, self).__init__(id)
         self.unit_id = unit_id
         self.name = name
         self.account = account
         self.level = int(level)
         self.champion_level = int(champion_level)
         self.hostility = hostility
+
+        self.class_id = class_id
+        self.race_id = race_id
+        self.character_id = character_id
+        self.owner_unit_id = owner_unit_id
+        self.is_grouped_with_local_player = is_grouped_with_local_player == "T"
 
         self.unit_added: UnitAdded = None
 

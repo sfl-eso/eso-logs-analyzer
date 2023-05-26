@@ -88,7 +88,7 @@ class EncounterLog(object):
                 elif event.status == "PLAYER_CANCELLED" or event.status == "INTERRUPTED":
                     begin_event.cancelled_end_cast = event
                 else:
-                    logger().error(f"Found EndCast event without unknown status {event.status}: {event} ")
+                    logger().error(f"Found EndCast event with unknown status {event.status}: {event} ")
         if len(begin_cast_cache) > 0:
             logger().warn(f"Found {len(begin_cast_cache)} begin events without end")
 

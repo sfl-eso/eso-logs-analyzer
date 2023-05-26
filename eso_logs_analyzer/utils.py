@@ -3,8 +3,6 @@ import sys
 from datetime import datetime
 from typing import Set, Generator, Union
 
-_ability_map = None
-
 
 def tqdm(iterable=None, desc=None, total=None, leave=True, file=None,
          ncols=None, mininterval=0.1, maxinterval=10.0, miniters=None,

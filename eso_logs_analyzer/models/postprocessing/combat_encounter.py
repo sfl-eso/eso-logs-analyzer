@@ -66,7 +66,8 @@ class CombatEncounter(Base):
 
     def compute_debuff_uptimes(self):
         # Let every unit object process all events
-        for event in tqdm(self.event_span, desc="Computing debuff uptimes", position=1, leave=False):
+        # for event in tqdm(self.event_span, desc="Computing debuff uptimes", position=1, leave=False):
+        for event in self.event_span:
             if not isinstance(event, EffectChanged):
                 continue
             for unit in self.hostile_units:
@@ -77,7 +78,13 @@ class CombatEncounter(Base):
             unit.compute_debuff_uptimes()
 
     @classmethod
-    def load(cls, encounter_log: EncounterLog) -> List[CombatEncounter]:
+    def load(cls, encounter_log: EncounterLog, tqdm_index: int = 0) -> List[CombatEncounter]:
+        """
+        Load combat encounters in a single log.
+        @param encounter_log: The log object containing the parsed encounterlog data.
+        @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
+        @return: List of combat encounters occurring in the input log.
+        """
         encounters = []
         begin_encounter: BeginCombat = None
         last_end_combat: EndCombat = None
@@ -85,7 +92,7 @@ class CombatEncounter(Base):
         # combat encounters.
         combat_phase_delta: timedelta = timedelta(seconds=2)
 
-        for event in tqdm(encounter_log.events, desc="Creating combat encounters"):
+        for event in tqdm(encounter_log.events, desc="Creating combat encounters", position=tqdm_index, leave=not tqdm_index):
             if isinstance(event, BeginCombat):
                 if begin_encounter is None:
                     begin_encounter = event

@@ -6,6 +6,7 @@ from python_json_config import Config, ConfigBuilder
 
 from .log import init_loggers
 from .models.data import EncounterLog
+from .parallel import ParallelTask
 from .rendering import render_readme, render_log
 
 
@@ -44,21 +45,29 @@ class Analyzer:
         assert self.input_dir.exists(), f"Log file or directory at {self.input_dir} does not exist."
 
     def run(self):
+        def analyze_log(log_file: Path, multiple: bool, config: Config, tqdm_index):
+            logs = EncounterLog.parse_log(log_file, multiple=multiple, tqdm_index=tqdm_index)
+            render_log(logs, config, tqdm_index=tqdm_index)
+
         # Copy the web resources (javascript and css) to target dir.
         copy_tree(str(self.project_root / self.config.web.resource_path), self.config.export.path)
 
         input_files = []
         if self.input_dir.is_file():
-            input_files.append(self.input_dir)
+            # Process single log file
+            analyze_log(self.input_dir, self.read_multiple_logs_in_file, self.config, 0)
         else:
-            for file in self.input_dir.iterdir():
-                if file.is_file() and file.suffix == self.__LOG_FILE_SUFFIX:
-                    input_files.append(file)
-            print(f"Processing {len(input_files)} log files...")
-
-        for log_file in input_files:
-            logs = EncounterLog.parse_log(log_file, multiple=self.read_multiple_logs_in_file)
-            render_log(logs, self.config)
+            input_files = list([file for file in self.input_dir.iterdir() if file.is_file() and file.suffix == self.__LOG_FILE_SUFFIX])
+            parallel_task = ParallelTask("Analyze log files",
+                                         self.config.parallel.num_processes,
+                                         input_objects=input_files,
+                                         task_function=analyze_log,
+                                         task_function_kwargs={
+                                             "multiple": self.read_multiple_logs_in_file,
+                                             "config": self.config
+                                         },
+                                         set_tqdm_index=True)
+            parallel_task.execute()
 
         render_readme(self.config)
 

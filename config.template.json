@@ -12,5 +12,8 @@
     "web": {
         "url_prefix": "prefix/of/the/url/path",
         "resource_path": "web-resources"
+    },
+    "parallel": {
+        "num_processes": 2
     }
 }

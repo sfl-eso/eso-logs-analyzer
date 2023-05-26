@@ -4,19 +4,27 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Union, List, Dict, Type, Set
 
+from tqdm import tqdm
+
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
     TargetEvent
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
-from ...utils import read_csv, get_num_lines, tqdm
+from ...utils import read_csv, get_num_lines
 
 
 class EncounterLog(Base):
 
-    def __init__(self, events: List[Event]):
+    def __init__(self, events: List[Event], tqdm_index: int):
+        """
+        Creates an encounter log object.
+        @param events: List of events that occurred between the begin and end log event of this log.
+        @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
+        """
         super().__init__()
 
         self._events = events
+        self.__tqdm_index = tqdm_index
 
         # Sort the events by their type
         event_dict = defaultdict(list)
@@ -38,7 +46,7 @@ class EncounterLog(Base):
         self.player_unit_added: Dict[int, UnitAdded] = {unit.unit_id: unit for unit in self._event_dict[UnitAdded.event_type]
                                                         if unit.unit_type == UnitType.PLAYER}
 
-        for event in tqdm(self._events, "Resolving event references"):
+        for event in tqdm(self._events, "Resolving event references", position=self.__tqdm_index, leave=not self.__tqdm_index):
             event.compute_event_time(self)
             event.resolve_ability_and_effect_info_references(self)
 
@@ -48,20 +56,6 @@ class EncounterLog(Base):
         self.__match_log_events()
         self.__match_trial_events()
         self.__match_unit_events()
-
-        # # Combat encounters
-        # self.combat_encounters: List[BeginCombat] = []
-        # self._create_combat_encounters()
-        # for encounter in tqdm(self.combat_encounters, desc="Initializing encounters"):
-        #     # First check that we won't get unit id collisions in this encounter
-        #     encounter.check_unit_overlap()
-        #     # Extract all hostile units that are active during this encounter
-        #     encounter.extract_hostile_units()
-        #
-        # self._merge_combat_encounters()
-        #
-        # for encounter in tqdm(self.combat_encounters, desc="Enriching combat events"):
-        #     encounter.enrich_combat_events()
 
     def __str__(self):
         return f"{self.__class__.__name__}(begin={self.begin_log.time}, end={self.end_log.time})"
@@ -100,7 +94,7 @@ class EncounterLog(Base):
         # Contains end cast events for which there is no begin cast event with the same cast effect id and ability id
         missing_ability_id_begin_casts: Dict[int, List[EndCast]] = defaultdict(list)
 
-        for cast_effect_id in tqdm(cast_effect_ids, desc="Matching cast events"):
+        for cast_effect_id in tqdm(cast_effect_ids, desc="Matching cast events", position=self.__tqdm_index, leave=not self.__tqdm_index):
             if cast_effect_id not in begin_event_dict:
                 # The begin cast event for this cast was not recorded.
                 missing_begin_casts.append(cast_effect_id)
@@ -208,7 +202,7 @@ class EncounterLog(Base):
         Match begin combat encounters to their end events. Since combat happens sequentially these events should always happen sequentially as well.
         """
         current_encounter: BeginCombat = None
-        for event in tqdm(self._events, desc="Matching combat events"):
+        for event in tqdm(self._events, desc="Matching combat events", position=self.__tqdm_index, leave=not self.__tqdm_index):
             if isinstance(event, BeginCombat):
                 if current_encounter is not None:
                     self.logger.error(f"Entering combat event {event} while already in combat event {current_encounter}")
@@ -238,7 +232,7 @@ class EncounterLog(Base):
 
         begin_trial_cache: Dict[TrialId, BeginTrial] = {}
         last_begin_trial: BeginTrial = None
-        for event in tqdm(self._events, desc="Matching trial events"):
+        for event in tqdm(self._events, desc="Matching trial events", position=self.__tqdm_index, leave=not self.__tqdm_index):
             if isinstance(event, BeginTrial):
                 if event.trial_id in begin_trial_cache:
                     self.logger.info(
@@ -262,7 +256,8 @@ class EncounterLog(Base):
         Unit ids of removed units may be reused for different units later on. Thus, we need to iterate over the events in their order.
         """
         added_units = {}
-        for event in tqdm(self._events, desc="Matching unit events"):
+        # Note: no need to use tqdm to monitor progress here, since this does not require a lot of time.
+        for event in self._events:
             if isinstance(event, UnitAdded):
                 if event.unit_id in added_units:
                     self.logger.error(f"Duplicate unit added event with id {event.id}")
@@ -297,10 +292,13 @@ class EncounterLog(Base):
         return self._event_dict[event_type.event_type]
 
     @classmethod
-    def parse_log(cls, file: Union[str, Path], multiple: bool = False) -> Union[EncounterLog, List[EncounterLog]]:
+    def parse_log(cls, file: Union[str, Path], multiple: bool = False, tqdm_index: int = 0) -> Union[EncounterLog, List[EncounterLog]]:
         """
-        Parses an encounterlog file into one or multiple logs depending on the passed parameters and how many
-        logs are contained in the file.
+        Parses an encounterlog file into one or multiple logs depending on the passed parameters and how many logs are contained in the file.
+        @param file: File containing the encounter log data.
+        @param multiple: If set to True, if multiple logs are in a single file, they will be loaded and their encounters chained together.
+        @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
+        @return: A single or multiple encounter log objects, depending on the number of logs in the input file.
         """
         path = Path(file)
         path = path.absolute()
@@ -311,7 +309,7 @@ class EncounterLog(Base):
         logs = []
         previous_event = None
 
-        for line in tqdm(csv_file, desc=f"Parsing log {path}", total=num_lines):
+        for line in tqdm(csv_file, desc=f"Parsing log {path}", total=num_lines, position=tqdm_index, leave=not tqdm_index):
 
             # Convert the line into an event object
             try:
@@ -341,5 +339,5 @@ class EncounterLog(Base):
                     break
 
         # Convert the events into EncounterLog objects
-        logs = [cls(events) for events in logs]
+        logs = [cls(events, tqdm_index) for events in logs]
         return logs if multiple else logs[0]

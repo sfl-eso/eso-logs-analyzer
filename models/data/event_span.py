@@ -23,6 +23,16 @@ class EventSpan(Base):
         # Finish with the given target event of the span
         yield self.end
 
+    def __reversed__(self):
+        event = self.end
+
+        while event != self.start:
+            yield event
+            event = event.previous
+
+        # Finish with the given target event of the span
+        yield self.start
+
     def __eq__(self, other):
         if not isinstance(other, EventSpan):
             return False

@@ -30,10 +30,15 @@ def print_uptime(effect_uptime: EffectUptime):
     ability, uptime, total_time = effect_uptime.compute_uptime()
     relative_uptime = round(uptime / total_time, 4)
 
+    encounter_begin = effect_uptime.combat_encounter.begin.time
+    target_spawn = (effect_uptime.uptime_begin - encounter_begin).total_seconds()
+    target_death = (effect_uptime.uptime_end - encounter_begin).total_seconds()
+    target_uptime = f"from {round(target_spawn, 2)}s to {round(target_death, 2)}s"
+
     message = ""
     message += f"Uptime for {ability.name} ({ability.ability_id}) "
     message += f"on {effect_uptime.target_unit.name} ({effect_uptime.target_unit.unit_id}): {relative_uptime} "
-    message += f"(uptime: {round(uptime, 4)}, target_uptime: {round(total_time, 4)})"
+    message += f"(uptime: {round(uptime, 4)}, target_uptime: {target_uptime})"
     print(message)
 
 
@@ -66,8 +71,11 @@ def main(args: Namespace):
         for uptime in uptimes:
             print_uptime(uptime)
 
-    # TODO: encode data in config?
-    # TODO: interactive selection?
+    # TODO: trial profiles that can be used/configured via config
+    # TODO: compute uptimes using callbacks on objects to reduce number of times events are iterated
+    # TODO: gather gear changed events for player before each combat encounter and dynamically check who is using Z'ens to compute its uptime
+    # TODO: compute uptimes/infos about boss mechanics (hit/dodge/cleanse of ability)
+
     # ability_map = assert_file_exists(config.ability_map)
     # encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in
     #                                tqdm(log.combat_encounters, desc="Processing encounters")]

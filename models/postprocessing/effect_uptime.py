@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Tuple
 
 from ..base import Base
 from ..data import EventSpan
-from ..data.events import AbilityInfo, UnitAdded, EffectChanged
+from ..data.events import AbilityInfo, UnitAdded, EffectChanged, CombatEvent
 from ..data.events.enums import EffectChangedStatus
 
 if TYPE_CHECKING:
@@ -17,12 +17,26 @@ class EffectUptime(Base):
         self.combat_encounter = combat_encounter
         self.target_unit = target_unit
 
-        self.uptime_begin_event = max(self.target_unit, self.combat_encounter.begin)
+        self.ability_infos = [ability for ability in self.combat_encounter.encounter_log.ability_infos.values() if ability.name == ability_name]
+
+        # Compute the "real" time filter for the uptime by finding the first and last combat events targeting the target unit.
+        uptime_begin = max(self.target_unit, self.combat_encounter.begin)
+        uptime_end = min(self.target_unit.unit_removed, self.combat_encounter.end)
+        target_uptime = EventSpan(uptime_begin, uptime_end)
+
+        self.uptime_begin_event = self.__compute_new_uptime_boundary(target_uptime)
+        self.uptime_end_event = self.__compute_new_uptime_boundary(reversed(target_uptime))
         self.uptime_begin = self.uptime_begin_event.time
-        self.uptime_end_event = min(self.target_unit.unit_removed, self.combat_encounter.end)
         self.uptime_end = self.uptime_end_event.time
 
-        self.ability_infos = [ability for ability in self.combat_encounter.encounter_log.ability_infos.values() if ability.name == ability_name]
+    def __compute_new_uptime_boundary(self, iterator) -> CombatEvent:
+        """
+        Returns the next combat event that targets this uptime's unit.
+        """
+        # TODO: separate Unit class that can do this once instead of for each uptime separately
+        for event in iterator:
+            if isinstance(event, CombatEvent) and event.target_unit == self.target_unit:
+                return event
 
     def __compute_uptime(self, ability_info: AbilityInfo) -> float:
         """

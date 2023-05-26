@@ -4,12 +4,14 @@ from datetime import datetime, timedelta
 from typing import Type, Dict, TYPE_CHECKING, Generator
 
 from utils import all_subclasses
+from .enums import BooleanType
+from ...base import Base
 
 if TYPE_CHECKING:
     from ..encounter_log import EncounterLog
 
 
-class Event(object):
+class Event(Base):
     """
     Base event class for all the different log events.
     Details for the parameters can be found on: https://esoapi.uesp.net/current/src/ingame/slashcommands/slashcommands_shared.lua.html
@@ -18,6 +20,8 @@ class Event(object):
     subclass_for_event_type: Dict[str, Type[Event]] = None
 
     def __init__(self, id: int, *args):
+        super().__init__()
+
         # Consecutive id of the event. Is a millisecond offset to the timestamp of the BEGIN_LOG event.
         self.id = id
         # Contains data fields that have not been parsed into named fields
@@ -111,8 +115,7 @@ class Event(object):
         if self.time is None:
             self.time = encounter_log.begin_log.compute_offset_event_time(self.id)
         else:
-            # TODO: debug logging
-            pass
+            self.logger.debug(f"Computing time for event {self} when it is already set")
 
     def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
         """
@@ -125,3 +128,14 @@ class Event(object):
         Computes the time for the given event id using the millisecond offset encoded in the event ids.
         """
         return self.time + timedelta(milliseconds=(event_id - self.id))
+
+    def _convert_boolean(self, value: str, field_name: str = None) -> bool:
+        """
+        Convert boolean values encoded as "T" or "F" and log cases where the value is not one of the expected values.
+        """
+        try:
+            bool_value = BooleanType(value)
+            return bool_value == BooleanType.TRUE
+        except ValueError as e:
+            field_name = f"'{field_name}' " if field_name is not None else ""
+            self.logger.error(f"Unexpected value when converting field {field_name}to bool! {e}")

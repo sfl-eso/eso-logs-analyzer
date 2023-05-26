@@ -7,6 +7,7 @@ from .span_event import SpanCast
 
 if TYPE_CHECKING:
     from .end_combat import EndCombat
+    from .begin_trial import BeginTrial
 
 
 class BeginCombat(SpanCast):
@@ -16,6 +17,7 @@ class BeginCombat(SpanCast):
         super(BeginCombat, self).__init__(id)
         # The corresponding end combat event
         self.end_combat: EndCombat = None
+        self.begin_trial: BeginTrial = None
 
         # # TODO: are these necessary?
         # self.events: List[Event] = []

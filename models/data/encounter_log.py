@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Union, List, Dict, Type, Set
 
 from utils import read_csv, get_num_lines, tqdm
-from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat
+from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
+    TargetEvent
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
 
@@ -231,19 +232,24 @@ class EncounterLog(Base):
         """
 
         begin_trial_cache: Dict[TrialId, BeginTrial] = {}
+        last_begin_trial: BeginTrial = None
         for event in tqdm(self._events, desc="Matching trial events"):
             if isinstance(event, BeginTrial):
                 if event.trial_id in begin_trial_cache:
                     self.logger.info(
                         f"Existing begin trial event at line {begin_trial_cache[event.trial_id].order_id + 1} for trial {event.trial_id} has no matching end trial event.")
                 begin_trial_cache[event.trial_id] = event
+                last_begin_trial = event
             elif isinstance(event, EndTrial):
+                last_begin_trial = None
                 if event.trial_id in begin_trial_cache:
                     begin_event = begin_trial_cache[event.trial_id]
                     event.begin_trial = begin_event
                     begin_event.end_trial = event
                 else:
                     self.logger.warning(f"No matching begin trial event found for end trial event at line {event.order_id + 1} for trial {event.trial_id}.")
+            elif isinstance(event, BeginCombat):
+                event.begin_trial = last_begin_trial
 
     def __match_unit_events(self):
         """
@@ -266,6 +272,17 @@ class EncounterLog(Base):
                 unit_added = added_units[event.unit_id]
                 unit_added.unit_changed.append(event)
                 event.unit_added = unit_added
+            elif isinstance(event, TargetEvent):
+                # For any event that contains unit information, we can enrich the unit fields now, since we track all units that are alive at the moment
+                # of the target event happening
+                if event.unit_id in added_units:
+                    event.unit = added_units[event.unit_id]
+                elif event.unit_id:
+                    self.logger.error(f"No unit found for event {event} with unit id {event.unit_id}")
+                if event.target_unit_id is not None and event.target_unit_id in added_units:
+                    event.target_unit = added_units[event.target_unit_id]
+                elif event.target_unit_id:
+                    self.logger.error(f"No unit found for event {event} with target unit id {event.target_unit_id}")
 
     @property
     def events(self):

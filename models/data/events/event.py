@@ -56,7 +56,7 @@ class Event(Base):
     __repr__ = __str__
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, Event):
             return False
         return self.order_id == other.order_id
 

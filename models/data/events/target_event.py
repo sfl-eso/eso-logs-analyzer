@@ -55,7 +55,7 @@ class TargetEvent(Event):
 
         # Target information (if it exists)
         if target_unit_id != "*":
-            self.target_unit_id = target_unit_id
+            self.target_unit_id = int(target_unit_id)
             self.target_current_health, self.target_maximum_health = self._convert_resource(target_health)
             self.target_current_magicka, self.target_maximum_magicka = self._convert_resource(target_magicka)
             self.target_current_stamina, self.target_maximum_stamina = self._convert_resource(target_stamina)

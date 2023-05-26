@@ -1,12 +1,11 @@
 from argparse import Namespace, ArgumentParser
 from pathlib import Path
-from typing import Union, List
+from typing import Union
 
 from python_json_config import ConfigBuilder, Config
-from tqdm import tqdm
 
-from loading import EncounterLog
-from processing import Encounter
+# from loading import EncounterLog
+from models.data import EncounterLog
 
 
 def cli_args() -> Namespace:
@@ -31,13 +30,13 @@ def main(args: Namespace):
     config: Config = ConfigBuilder().parse_config(assert_file_exists(args.config))
     # TODO: encode data in config?
     # TODO: interactive selection?
-    ability_map = assert_file_exists(config.ability_map)
+    # ability_map = assert_file_exists(config.ability_map)
     log = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
 
-    encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in
-                                   tqdm(log.combat_encounters, desc="Processing encounters")]
-    for encounter in encounters:
-        print(encounter)
+    # encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in
+    #                                tqdm(log.combat_encounters, desc="Processing encounters")]
+    # for encounter in encounters:
+    #     print(encounter)
 
     # boss_encounters = find_boss_encounters(log)
     # print(f"Evaluating log on {log._begin_log.time}")

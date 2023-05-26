@@ -10,7 +10,7 @@ def find_boss_encounters(encounter_log: EncounterLog) -> Dict[str, List[BeginCom
     boss_encounters = defaultdict(list)
     for boss in boss_names:
         for encounter in encounter_log.combat_encounters:
-            units = [unit.name for unit in encounter.extract_enemies()]
+            units = [unit.name for unit in encounter.extract_hostile_units()]
             if boss in units:
                 boss_encounters[boss].append(encounter)
     return dict(boss_encounters)

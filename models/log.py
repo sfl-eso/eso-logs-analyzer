@@ -31,8 +31,6 @@ class EncounterLog(object):
         # Ability Infos
         self.ability_infos: Dict[str, AbilityInfo] = {ability_info.ability_id: ability_info
                                                       for ability_info in self._event_dict["ABILITY_INFO"]}
-        # self._ability_infos_by_name = {ability_info.name: ability_info
-        #                                for ability_info in self._event_dict["ABILITY_INFO"]}
         self._match_event_infos()
 
         # Unit spawns and kills
@@ -49,7 +47,7 @@ class EncounterLog(object):
         self.combat_encounters: List[BeginCombat] = []
         self._create_combat_encounters()
         for encounter in tqdm(self.combat_encounters, desc="Processing encounters", ascii=" #"):
-            encounter.extract_enemies()
+            encounter.extract_hostile_units()
             encounter.process_combat_events(self)
 
     def __str__(self):
@@ -82,16 +80,28 @@ class EncounterLog(object):
 
     def _create_combat_encounters(self):
         current_encounter: BeginCombat = None
+        unit_pool: Dict[str, UnitAdded] = {}
         for event in self._events:
+            # Skip info events since they are queried separately
+            if isinstance(event, AbilityInfo) or isinstance(event, EffectInfo):
+                continue
+
+            # Track active units so encounters contain units spawned before combat started
+            if isinstance(event, UnitAdded):
+                unit_pool[event.unit_id] = event
+            elif isinstance(event, UnitRemoved):
+                del unit_pool[event.unit_id]
+
+            # Track encounter start and end and add any other event to the combat span
             if isinstance(event, BeginCombat):
                 current_encounter = event
+                current_encounter.start_units = list(unit_pool.values())
             elif isinstance(event, EndCombat):
                 current_encounter.end_combat = event
+                current_encounter.end_units = list(unit_pool.values())
                 event.begin_combat = current_encounter
                 self.combat_encounters.append(current_encounter)
                 current_encounter = None
-            elif isinstance(event, AbilityInfo) or isinstance(event, EffectInfo):
-                continue
             elif current_encounter is not None:
                 current_encounter.events.append(event)
                 if isinstance(event, PlayerInfo):
@@ -142,7 +152,8 @@ class EncounterLog(object):
                     # We have a separate log starting after this line
                     logs.append(log)
                     events = []
-                    cpunt = 0
+                    count = 0
+                    previous_event = None
                 else:
                     return log
         return logs

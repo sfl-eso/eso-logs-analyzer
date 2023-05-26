@@ -75,7 +75,10 @@ class BeginCombat(Event):
         super(BeginCombat, self).__init__(id)
         self.end_combat: EndCombat = None
         self.events: List[Event] = []
-        self.units: List[UnitAdded] = []
+
+        self.start_units: List[UnitAdded] = []
+        self.end_units: List[UnitAdded] = []
+        self.hostile_units: List[UnitAdded] = []
 
     def __str__(self):
         return f"{self.__class__.__name__}(id={self.id}, end_combat={self.end_combat is not None}, " \
@@ -83,10 +86,11 @@ class BeginCombat(Event):
 
     __repr__ = __str__
 
-    def extract_enemies(self) -> List[UnitAdded]:
+    def extract_hostile_units(self):
+        all_units = set(self.start_units + self.end_units)
         units_added = [event for event in self.events if isinstance(event, UnitAdded)]
-        self.units = [unit for unit in units_added if unit.hostility == "HOSTILE"]
-        return self.units
+        all_units = all_units.union(units_added)
+        self.hostile_units = [unit for unit in all_units if unit.hostility == "HOSTILE"]
 
     def process_combat_events(self, log: EncounterLog):
         for event in self.events:

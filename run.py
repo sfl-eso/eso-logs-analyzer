@@ -9,8 +9,14 @@ def main():
     https://www.esologs.com/reports/C6GkAg9VKPvYHzrx/
     """
     log = EncounterLog.parse_log("data/markarth_vka.log", multiple=False)
-    boss_encounters = find_boss_encounters(log)
-    boss_encounters
+    for encounter in log.combat_encounters:
+        print(f"Enemies in encounter {encounter}")
+        units = sorted(set([unit.name for unit in encounter.hostile_units]))
+        for enemy in units:
+            print(enemy)
+        print()
+    # boss_encounters = find_boss_encounters(log)
+    # boss_encounters
 
     # encounters = log.combat_encounters
     # first = encounters[0]

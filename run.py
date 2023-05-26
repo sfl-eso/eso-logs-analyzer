@@ -5,6 +5,7 @@ from typing import Union
 from python_json_config import ConfigBuilder, Config
 
 # from loading import EncounterLog
+from log import init_loggers
 from models.data import EncounterLog
 
 
@@ -27,7 +28,8 @@ def main(args: Namespace):
     """
     https://www.esologs.com/reports/4VcYzBXARm8wp2yk
     """
-    config: Config = ConfigBuilder().parse_config(assert_file_exists(args.config))
+    config: Config = ConfigBuilder().parse_config(str(assert_file_exists(args.config)))
+    init_loggers(config)
     # TODO: encode data in config?
     # TODO: interactive selection?
     # ability_map = assert_file_exists(config.ability_map)

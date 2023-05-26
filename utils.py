@@ -2,14 +2,12 @@ import csv
 import json
 import sys
 from datetime import datetime
-from typing import Set
-
-from tqdm import tqdm
+from typing import Set, Generator, Union
 
 _ability_map = None
 
 
-def __get_num_lines(file_name: str) -> int:
+def get_num_lines(file_name: str) -> int:
     """
     Fast counting of the number of lines in large files (https://stackoverflow.com/a/9631635).
     """
@@ -29,13 +27,10 @@ def read_csv(file_name: str,
              delimiter: str = ",",
              quotechar: str = '"',
              has_header: bool = True,
-             columns_to_keep: Set[str] = None) -> list:
-    lines = []
-    num_lines = __get_num_lines(file_name)
+             columns_to_keep: Set[str] = None) -> Generator[Union[str, dict], None, None]:
     csv.field_size_limit(sys.maxsize)
     with open(file_name, 'r') as file:
-        data = tqdm(csv.reader(file, delimiter=delimiter, quotechar=quotechar), total=num_lines,
-                    desc=f"Loading {file_name}")
+        data = csv.reader(file, delimiter=delimiter, quotechar=quotechar)
         if has_header:
             header = next(data)
             for row in data:
@@ -45,10 +40,10 @@ def read_csv(file_name: str,
                 named_row = {name: padded_row[index] for index, name in enumerate(header)}
                 if columns_to_keep:
                     named_row = {key: value for key, value in named_row.items() if key in columns_to_keep}
-                lines.append(named_row)
+                yield named_row
         else:
-            lines = [row for row in data]
-    return lines
+            for line in data:
+                yield line
 
 
 def parse_epoch_time(epoch_time: str) -> datetime:

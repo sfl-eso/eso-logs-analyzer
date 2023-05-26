@@ -64,8 +64,7 @@ class RaceId(Enum):
     ALTMER = "7"
     # BOSMER = "8"
     KHAJIIT = "9"
-    # IMPERIAL = "10"
-    UNKNOWN10 = "10"
+    IMPERIAL = "10"
 
 
 class UnitType(Enum):

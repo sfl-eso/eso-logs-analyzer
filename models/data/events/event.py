@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Type, Dict
+from datetime import datetime, timedelta
+from typing import Type, Dict, TYPE_CHECKING
 
 from utils import all_subclasses
+
+if TYPE_CHECKING:
+    from ..encounter_log import EncounterLog
 
 
 class Event(object):
@@ -58,11 +61,7 @@ class Event(object):
             raise ValueError(f"No event class found for {event_type}")
 
         subclass = cls.subclass_for_event_type[event_type]
-        try:
-            instance = subclass(id, *args)
-        except Exception as e:
-            print(f"{e}\tEVENT_TYPE {event_type}\tORDER_ID {order_id}")
-            return None
+        instance = subclass(id, *args)
         instance.order_id = order_id
 
         # Hacky way to change the class of soul gem resurrection events, since they have a non-existing ability id
@@ -88,3 +87,25 @@ class Event(object):
     def previous(self, value: Event):
         self._previous = value
         value._next = self
+
+    def compute_event_time(self, encounter_log: EncounterLog):
+        """
+        Set the epoch time for each event by computing the diff to the begin log event.
+        """
+        if self.time is None:
+            self.time = encounter_log.begin_log.compute_offset_event_time(self.id)
+        else:
+            # TODO: debug logging
+            pass
+
+    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
+        """
+        Adds ability info and effect info objects using this events ability id if it has one.
+        """
+        pass
+
+    def compute_offset_event_time(self, event_id: int) -> datetime:
+        """
+        Computes the time for the given event id using the millisecond offset encoded in the event ids.
+        """
+        return self.time + timedelta(milliseconds=(event_id - self.id))

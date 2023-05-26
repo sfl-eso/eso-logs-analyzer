@@ -7,6 +7,8 @@ from .event import Event
 
 if TYPE_CHECKING:
     from .begin_cast import BeginCast
+    from .ability_info import AbilityInfo
+    from ..encounter_log import EncounterLog
 
 
 class EndCast(Event):
@@ -22,3 +24,7 @@ class EndCast(Event):
         self.interrupting_unit_id = int(interrupting_unit_id) if interrupting_unit_id is not None else None
 
         self.begin_cast: BeginCast = None
+        self.ability_info: AbilityInfo = None
+
+    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
+        self.ability_info = encounter_log.ability_infos.get(self.ability_id)

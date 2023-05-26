@@ -7,6 +7,7 @@ from .event import Event
 if TYPE_CHECKING:
     from .ability_info import AbilityInfo
     from .unit_added import UnitAdded
+    from ..encounter_log import EncounterLog
 
 
 class TargetEvent(Event):
@@ -70,7 +71,7 @@ class TargetEvent(Event):
             self.target_unit_id = None
 
         # Ability that was used for this event
-        self.ability: AbilityInfo = None
+        self.ability_info: AbilityInfo = None
         # Unit that cast this event
         self.unit: UnitAdded = None
         # If set, unit that was targeted by this event
@@ -78,3 +79,6 @@ class TargetEvent(Event):
 
     def filter_by_type_and_target(self, event_type, target: UnitAdded):
         return isinstance(self, event_type) and self.target_unit == target
+
+    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
+        self.ability_info = encounter_log.ability_infos.get(self.ability_id)

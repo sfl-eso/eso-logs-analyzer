@@ -6,6 +6,7 @@ from .event import Event
 
 if TYPE_CHECKING:
     from .effect_info import EffectInfo
+    from ..encounter_log import EncounterLog
 
 
 class AbilityInfo(Event):
@@ -26,3 +27,6 @@ class AbilityInfo(Event):
 
         # The EffectInfo object belonging to the same ability id
         self.effect_info: EffectInfo = None
+
+    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
+        self.effect_info = encounter_log.effect_infos.get(self.ability_id)

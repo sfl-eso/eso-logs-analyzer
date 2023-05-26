@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from .enums import TrialId
 from .event import Event
+
+if TYPE_CHECKING:
+    from ..encounter_log import EncounterLog
 
 
 class TrialInit(Event):
@@ -27,3 +33,7 @@ class TrialInit(Event):
         self.success = success == "T"
         # Final score of the trial
         self.final_score = int(final_score)
+
+    def compute_event_time(self, encounter_log: EncounterLog):
+        # TODO: why shouldn't we set the time here?
+        pass

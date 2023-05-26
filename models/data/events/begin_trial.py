@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING
 from utils import parse_epoch_time
 from .enums import TrialId
 from .event import Event
+from .span_event import SpanCast
 
 if TYPE_CHECKING:
     from .end_trial import EndTrial
 
 
-class BeginTrial(Event):
+class BeginTrial(SpanCast):
     """
     Technically the epoch time is "startTimeMS"
     """
@@ -29,3 +30,11 @@ class BeginTrial(Event):
 
     # def event_time(self, event_id: int) -> datetime:
     #     return self.time + timedelta(milliseconds=(event_id - self.id))
+
+    @property
+    def end_event(self) -> Event:
+        return self.end_trial
+
+    @end_event.setter
+    def end_event(self, value: Event):
+        self.end_trial = value

@@ -3,13 +3,16 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING, List
 
+from .enums import CastStatus
+from .event import Event
+from .span_event import SpanCast
 from .target_event import TargetEvent
 
 if TYPE_CHECKING:
     from .end_cast import EndCast
 
 
-class BeginCast(TargetEvent):
+class BeginCast(TargetEvent, SpanCast):
     event_type: str = "BEGIN_CAST"
 
     def __init__(self,
@@ -65,14 +68,25 @@ class BeginCast(TargetEvent):
         self.channeled = self._convert_boolean(channeled, field_name="channeled")
         self.cast_effect_id = int(cast_effect_id)
 
-        self.cancelled_end_cast: EndCast = None
         self.end_cast: EndCast = None
         self.duplicate_end_casts: List[EndCast] = []
 
     @property
     def completed(self):
-        return self.end_cast is not None and self.cancelled_end_cast is None
+        return self.end_cast is not None and self.end_cast.status == CastStatus.COMPLETED
 
     @property
     def cancelled(self):
-        return self.end_cast is not None and self.cancelled_end_cast is not None
+        return self.end_cast is not None and self.end_cast.status == CastStatus.PLAYER_CANCELLED
+
+    @property
+    def interrupted(self):
+        return self.end_cast is not None and self.end_cast.status == CastStatus.INTERRUPTED
+
+    @property
+    def end_event(self) -> Event:
+        return self.end_cast
+
+    @end_event.setter
+    def end_event(self, value: Event):
+        self.end_cast = value

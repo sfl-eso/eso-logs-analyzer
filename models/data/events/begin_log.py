@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING
 from utils import parse_epoch_time
 from .enums import Server, Locale
 from .event import Event
+from .span_event import SpanCast
 
 if TYPE_CHECKING:
     from .end_log import EndLog
 
 
-class BeginLog(Event):
+class BeginLog(SpanCast):
     event_type: str = "BEGIN_LOG"
 
     def __init__(self, id: int, epoch_time: str, log_version: str, server: str, locale: str, client_version: str):
@@ -32,3 +33,11 @@ class BeginLog(Event):
     # TODO: unified event time method in Event using "parent" events
     # def event_time(self, event_id: int) -> datetime:
     #     return self.time + timedelta(milliseconds=(event_id - self.id))
+
+    @property
+    def end_event(self) -> Event:
+        return self.end_log
+
+    @end_event.setter
+    def end_event(self, value: Event):
+        self.end_log = value

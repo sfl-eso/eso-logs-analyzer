@@ -6,7 +6,7 @@ from typing import Union, List, Dict
 
 from utils import read_csv, get_num_lines, tqdm
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved
-from .events.enums import CastStatus, UnitType
+from .events.enums import UnitType
 from ..base import Base
 
 
@@ -72,25 +72,33 @@ class EncounterLog(Base):
 
         for event in tqdm(self._events, desc="Matching cast events"):
             if isinstance(event, BeginCast):
+                # TODO: there can be multiple begin cast events with the same ids
+                # TODO: use the time to match them up
                 begin_cast_cache[event.cast_effect_id] = event
                 begin_cast_dict[event.cast_effect_id] = event
             elif isinstance(event, EndCast):
                 try:
-                    begin_event = begin_cast_dict[event.cast_effect_id]
+                    begin_event: BeginCast = begin_cast_dict[event.cast_effect_id]
                 except KeyError:
                     self.logger.warning(f"No begin cast for end cast {event}")
                     continue
                 event.begin_cast = begin_event
-                if event.status == CastStatus.COMPLETED and begin_event.end_cast is not None:
-                    begin_event.duplicate_end_casts.append(event)
-                elif event.status == CastStatus.COMPLETED:
-                    begin_event.end_cast = event
-                    del begin_cast_cache[event.cast_effect_id]
-                elif event.status == CastStatus.PLAYER_CANCELLED or event.status == CastStatus.INTERRUPTED:
-                    begin_event.cancelled_end_cast = event
 
-        if len(begin_cast_cache) > 0:
-            self.logger.warning(f"Found {len(begin_cast_cache)} begin events without end")
+                if event.ability_id == begin_event.ability_id:
+                    if begin_event.end_cast is not None:
+                        self.logger.error(f"Multiple end cast events with matching ability id for {begin_event}")
+                        begin_event.duplicate_end_casts.append(event)
+                    else:
+                        begin_event.end_cast = event
+                else:
+                    begin_event.duplicate_end_casts.append(event)
+
+        for begin_event in begin_cast_cache.values():
+            if begin_event.end_cast is None and len(begin_event.duplicate_end_casts) == 0:
+                self.logger.warning(f"No end cast found for begin cast {begin_event}")
+            elif begin_event.end_cast is None:
+                self.logger.error(
+                    f"No end cast found with matching ability id found for begin cast {begin_event} but {len(begin_event.duplicate_end_casts)} other end cast events were found")
 
     def _match_unit_events(self):
         """

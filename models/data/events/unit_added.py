@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, List, Dict
 
 from .enums import UnitType, RaceId, ClassId, Hostility
 from .event import Event
+from .span_event import SpanCast
 
 if TYPE_CHECKING:
     from .unit_changed import UnitChanged
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from .health_regen_event import HealthRegen
 
 
-class UnitAdded(Event):
+class UnitAdded(SpanCast):
     """
     Represent the spawn of a unit. Can be player, enemy or pet.
     """
@@ -93,3 +94,11 @@ class UnitAdded(Event):
     #            f"unit_removed={self.unit_removed is not None})"
     #
     # __repr__ = __str__
+
+    @property
+    def end_event(self) -> Event:
+        return self.unit_removed
+
+    @end_event.setter
+    def end_event(self, value: Event):
+        self.unit_removed = value

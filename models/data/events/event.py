@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Type, Dict, TYPE_CHECKING, Generator
+from typing import Type, Dict, TYPE_CHECKING
 
 from utils import all_subclasses
 from .enums import BooleanType
@@ -9,6 +9,7 @@ from ...base import Base
 
 if TYPE_CHECKING:
     from ..encounter_log import EncounterLog
+    from ..event_span import EventSpan
 
 
 class Event(Base):
@@ -74,6 +75,10 @@ class Event(Base):
 
         return instance
 
+    @classmethod
+    def sort_key(cls, event: Event):
+        return event.order_id
+
     @property
     def next(self):
         return self._next
@@ -92,21 +97,17 @@ class Event(Base):
         self._previous = value
         value._next = self
 
-    # TODO: proper span class with __iter__ method and functions to check if an event is in the span and if spans overlap (and to merge them)
-    def span(self, other: Event, inclusive: bool = False) -> Generator[Event, None, None]:
-        assert isinstance(other, Event), f"Can't create span with non-event object {other}"
-        assert self.order_id < other.order_id, f"Can't create span from {self} with {other} that does not have a higher order id"
-        # If the span is inclusive start with this event, otherwise with the next event
-        next_event = self if inclusive else self.next
+    def span(self, other: Event) -> EventSpan:
+        from ..event_span import EventSpan
+        return EventSpan(self, other)
 
-        while next_event != other:
-            current_event = next_event
-            next_event = current_event.next
-            yield current_event
-
-        # If the span is inclusive, finish with the given target event of the span
-        if inclusive:
-            yield other
+    @property
+    def span_to_end(self):
+        """
+        Returns span to end event of this event. If this event does not have an end event, just return a span of this event.
+        """
+        from ..event_span import EventSpan
+        return EventSpan(self, self)
 
     def compute_event_time(self, encounter_log: EncounterLog):
         """

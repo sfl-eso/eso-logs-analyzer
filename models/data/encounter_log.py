@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Union, List, Dict, Type, Set
 
 from utils import read_csv, get_num_lines, tqdm
-from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved
-from .events.enums import UnitType, CastStatus
+from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial
+from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
 
 
@@ -41,9 +41,11 @@ class EncounterLog(Base):
             event.resolve_ability_and_effect_info_references(self)
 
         # Match the span events with their end-counterparts and set the begin and end event fields.
-        self.__match_log_events()
         self.__match_cast_events()
-        self._match_unit_events()
+        # TODO: combat
+        self.__match_log_events()
+        self.__match_trial_events()
+        self.__match_unit_events()
 
         # # Combat encounters
         # self.combat_encounters: List[BeginCombat] = []
@@ -63,13 +65,6 @@ class EncounterLog(Base):
         return f"{self.__class__.__name__}(begin={self.begin_log.time}, end={self.end_log.time})"
 
     __repr__ = __str__
-
-    def __match_log_events(self):
-        """
-        Connect the begin and end log events with each other.
-        """
-        self.begin_log.end_log = self.end_log
-        self.end_log.begin_log = self.begin_log
 
     def __match_cast_events(self):
         """
@@ -202,7 +197,39 @@ class EncounterLog(Base):
             if num_unmatched_orphaned_end_casts:
                 self.logger.info(f"{num_unmatched_orphaned_end_casts} orphaned end cast events could not be matched to begin cast events with the same cast effect id.")
 
-    def _match_unit_events(self):
+    def __match_combat_events(self):
+        # TODO
+        pass
+
+    def __match_log_events(self):
+        """
+        Connect the begin and end log events with each other.
+        """
+        self.begin_log.end_log = self.end_log
+        self.end_log.begin_log = self.begin_log
+
+    def __match_trial_events(self):
+        """
+        Match trial events to their respective end trial events.
+        If a trial was not finished, there won't be a matching end trial event.
+        """
+
+        begin_trial_cache: Dict[TrialId, BeginTrial] = {}
+        for event in tqdm(self._events, desc="Matching trial events"):
+            if isinstance(event, BeginTrial):
+                if event.trial_id in begin_trial_cache:
+                    self.logger.info(
+                        f"Existing begin trial event at line {begin_trial_cache[event.trial_id].order_id + 1} for trial {event.trial_id} has no matching end trial event.")
+                begin_trial_cache[event.trial_id] = event
+            elif isinstance(event, EndTrial):
+                if event.trial_id in begin_trial_cache:
+                    begin_event = begin_trial_cache[event.trial_id]
+                    event.begin_trial = begin_event
+                    begin_event.end_trial = event
+                else:
+                    self.logger.warning(f"No matching begin trial event found for end trial event at line {event.order_id + 1} for trial {event.trial_id}.")
+
+    def __match_unit_events(self):
         """
         Match unit events of their spawn, changes and when they are removed.
         Unit ids of removed units may be reused for different units later on. Thus, we need to iterate over the events in their order.

@@ -1,22 +1,33 @@
+import json
 from collections import defaultdict
-from datetime import timedelta
-from typing import List
+from pathlib import Path
+from typing import Dict
 
-from models import BeginCombat, AbilityInfo, UnitAdded, EffectChanged
+from models import BeginCombat, UnitAdded, EncounterLog
 
-from .effect_span import EffectSpan, EffectUnitSpan
+from .effect_span import EffectUnitSpan
 
 
-def debuff_target_unit(encounter: BeginCombat, ability: AbilityInfo, target_unit: UnitAdded) -> dict:
-    span = EffectUnitSpan(ability=ability, start=encounter, end=encounter.end_combat, target_unit=target_unit)
-    uptimes = span._uptime_spans()
+def debuffs_target_unit(log: EncounterLog, encounter: BeginCombat, ability_file: Path, target_unit: UnitAdded) -> Dict[str, EffectUnitSpan]:
+    ability_dict = json.load(open(ability_file))
+    uptimes_by_ability_name = defaultdict(list)
+    for ability_id, name in ability_dict["debuffs"].items():
+        try:
+            ability = log.ability_info(ability_id)
+        except KeyError:
+            # The effect did not appear in the encounter
+            # TODO: create a 0 uptime class
+            continue
+        effect_span = EffectUnitSpan(ability=ability, start=encounter, end=encounter.end_combat, target_unit=target_unit)
+        uptimes_by_ability_name[name].append(effect_span)
 
-    total_combat_time = encounter.end_combat.time - encounter.time
-    total_debuff_time = sum([span.duration().total_seconds() for span in uptimes])
-
-    return {
-        "unit": target_unit,
-        "ability": ability,
-        "combat_time": total_combat_time,
-        "debuff_time": total_debuff_time
-    }
+    ability_uptimes = {}
+    for name, uptimes in uptimes_by_ability_name.items():
+        # Nothing to merge
+        if len(uptimes) == 1:
+            ability_uptimes[name] = uptimes[0]
+        else:
+            merged_uptime = ability_uptimes[0]
+            for uptime in ability_uptimes[1:]:
+                merged_uptime = EffectUnitSpan.merge(merged_uptime, uptime)
+    return ability_uptimes

@@ -25,3 +25,8 @@ class EventSpan(object):
 
     def _filter_event(self, event: Event):
         return True
+
+    def __str__(self):
+        return f"{self.__class__.__name__}(start={self.start}, end={self.end})"
+
+    __repr__ = __str__

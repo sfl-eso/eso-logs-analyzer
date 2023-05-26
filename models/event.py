@@ -29,7 +29,6 @@ class Event(object):
 
     def __str__(self):
         fields = [f"{field}={value}" for field, value in self.__dict__.items() if not field.startswith("_") and field != "data" and not isinstance(value, Event)]
-        fields.append(f"data={self.data}")
         fields = ", ".join(fields)
         return f"{self.__class__.__name__}({fields})"
 

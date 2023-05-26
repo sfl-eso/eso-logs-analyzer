@@ -1,7 +1,9 @@
+from pathlib import Path
+
 from kynes_aegis import find_boss_encounters, YANDIR_THE_BUTCHER, CAPTAIN_VROL, LORD_FALGRAVN
 from logger import logger
 from models import EncounterLog
-from querying import EventSpan, EffectSpan, print_encounter_stats, debuff_target_unit
+from querying import EventSpan, EffectSpan, print_encounter_stats, debuffs_target_unit
 
 
 def main():
@@ -9,14 +11,16 @@ def main():
     https://www.esologs.com/reports/C6GkAg9VKPvYHzrx/
     """
     log = EncounterLog.parse_log("/mnt/g/Jan/Projects/ESOLogs/data/markarth_vka.log", multiple=False)
-    crusher_id = 17906
-    crusher = log.ability_info(crusher_id)
+    ability_file = Path("/mnt/g/Jan/Projects/ESOLogs/ability_map.json")
     boss_encounters = find_boss_encounters(log)
     print(f"Evaluating log on {log._begin_log.time}")
-    encounter = boss_encounters[YANDIR_THE_BUTCHER][-1]
-    yandir = encounter.get_hostile_unit(YANDIR_THE_BUTCHER)
-    uptime = debuff_target_unit(encounter, crusher, yandir)
-    uptime
+    all_uptimes = {}
+    for boss in [YANDIR_THE_BUTCHER, CAPTAIN_VROL, LORD_FALGRAVN]:
+        encounter = boss_encounters[boss][-1]
+        boss_unit = encounter.get_hostile_unit(boss)
+        uptimes = debuffs_target_unit(log, encounter, ability_file, boss_unit)
+        all_uptimes[encounter] = uptimes
+    all_uptimes
 
     # print_encounter_stats(encounter, YANDIR_THE_BUTCHER)
     #

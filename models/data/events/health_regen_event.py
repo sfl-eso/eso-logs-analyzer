@@ -28,11 +28,11 @@ class HealthRegen(Event):
         self.unit_id = int(unit_id)
         self.effective_regen = int(effective_regen)
         # These values occur in the form '42384/42384'
-        self.current_health, self.max_health = [int(part) for part in health.split("/")]
-        self.current_magicka, self.max_magicka = [int(part) for part in magicka.split("/")]
-        self.current_stamina, self.max_stamina = [int(part) for part in stamina.split("/")]
+        self.current_health, self.max_health = self._convert_resource(health)
+        self.current_magicka, self.max_magicka = self._convert_resource(magicka)
+        self.current_stamina, self.max_stamina = self._convert_resource(stamina)
         # Occurs in the form '11/500' with 500 always being the maximum value
-        self.ultimate = int(ultimate.split("/")[0])
+        self.ultimate, self.max_ultimate = self._convert_resource(ultimate)
         self.werewolf_ultimate = werewolf_ultimate
         self.shield = shield
 

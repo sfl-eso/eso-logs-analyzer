@@ -41,11 +41,11 @@ class TargetEvent(Event):
         self.ability_id = int(ability_id)
 
         # These values occur in the form '42384/42384'
-        self.current_health, self.max_health = [int(part) for part in health.split("/")]
-        self.current_magicka, self.max_magicka = [int(part) for part in magicka.split("/")]
-        self.current_stamina, self.max_stamina = [int(part) for part in stamina.split("/")]
+        self.current_health, self.max_health = self._convert_resource(health)
+        self.current_magicka, self.max_magicka = self._convert_resource(magicka)
+        self.current_stamina, self.max_stamina = self._convert_resource(stamina)
         # Occurs in the form '11/500' with 500 always being the maximum value
-        self.ultimate = int(ultimate.split("/")[0])
+        self.ultimate, self.max_ultimate = self._convert_resource(ultimate)
         self.werewolf_ultimate = werewolf_ultimate
         self.shield = shield
 
@@ -56,11 +56,11 @@ class TargetEvent(Event):
         # Target information (if it exists)
         if target_unit_id != "*":
             self.target_unit_id = target_unit_id
-            self.target_current_health, self.target_maximum_health = [int(part) for part in target_health.split("/")]
-            self.target_current_magicka, self.target_maximum_magicka = [int(part) for part in target_magicka.split("/")]
-            self.target_current_stamina, self.target_maximum_stamina = [int(part) for part in target_stamina.split("/")]
+            self.target_current_health, self.target_maximum_health = self._convert_resource(target_health)
+            self.target_current_magicka, self.target_maximum_magicka = self._convert_resource(target_magicka)
+            self.target_current_stamina, self.target_maximum_stamina = self._convert_resource(target_stamina)
             # Occurs in the form '11/500' with 500 always being the maximum value
-            self.target_ultimate = int(target_ultimate.split("/")[0])
+            self.target_ultimate, self.target_max_ultimate = self._convert_resource(target_ultimate)
             self.target_werewolf_ultimate = target_werewolf_ultimate
             self.target_shield = target_shield
 

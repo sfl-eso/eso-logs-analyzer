@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Type, Dict, TYPE_CHECKING
+from typing import Type, Dict, TYPE_CHECKING, Tuple
 
 from utils import all_subclasses
 from .enums import BooleanType
@@ -140,3 +140,10 @@ class Event(Base):
         except ValueError as e:
             field_name = f"'{field_name}' " if field_name is not None else ""
             self.logger.error(f"Unexpected value when converting field {field_name}to bool! {e}")
+
+    def _convert_resource(self, value: str) -> Tuple[int, int]:
+        """
+        Converts a resource in the format "current/max" into two integers.
+        """
+        current_value, max_value = [int(part) for part in value.split("/")]
+        return current_value, max_value

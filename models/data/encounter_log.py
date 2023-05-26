@@ -4,16 +4,17 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Union, List, Dict
 
-from tqdm import tqdm
-
-from utils import read_csv, get_num_lines
+from utils import read_csv, get_num_lines, tqdm
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved
 from .events.enums import CastStatus, UnitType
+from ..base import Base
 
 
-class EncounterLog(object):
+class EncounterLog(Base):
 
     def __init__(self, events: List[Event]):
+        super().__init__()
+
         self._events = events
 
         # Sort the events by their type
@@ -77,8 +78,7 @@ class EncounterLog(object):
                 try:
                     begin_event = begin_cast_dict[event.cast_effect_id]
                 except KeyError:
-                    # TODO: logging
-                    # logger().warn(f"No begin cast for end cast {event}")
+                    self.logger.warning(f"No begin cast for end cast {event}")
                     continue
                 event.begin_cast = begin_event
                 if event.status == CastStatus.COMPLETED and begin_event.end_cast is not None:
@@ -90,9 +90,7 @@ class EncounterLog(object):
                     begin_event.cancelled_end_cast = event
 
         if len(begin_cast_cache) > 0:
-            pass
-            # TODO: logging
-            # logger().warn(f"Found {len(begin_cast_cache)} begin events without end")
+            self.logger.warning(f"Found {len(begin_cast_cache)} begin events without end")
 
     def _match_unit_events(self):
         """
@@ -102,9 +100,10 @@ class EncounterLog(object):
         added_units = {}
         for event in tqdm(self._events, desc="Matching unit events"):
             if isinstance(event, UnitAdded):
-                # TODO: logging?
-                assert event.unit_id not in added_units, f"Duplicate unit added event with id {event.id}"
-                added_units[event.unit_id] = event
+                if event.unit_id in added_units:
+                    self.logger.error(f"Duplicate unit added event with id {event.id}")
+                else:
+                    added_units[event.unit_id] = event
             elif isinstance(event, UnitRemoved):
                 unit_added = added_units[event.unit_id]
                 unit_added.unit_removed = event
@@ -131,8 +130,15 @@ class EncounterLog(object):
         previous_event = None
 
         for line in tqdm(csv_file, desc=f"Parsing log {path}", total=num_lines):
+
             # Convert the line into an event object
-            event = Event.create(count, int(line[0]), line[1], *line[2:])
+            try:
+                event = Event.create(count, int(line[0]), line[1], *line[2:])
+            except ValueError as e:
+                cls.logger.error(f"Could not create Event of type {line[1]} at line {count + 1}! {e}")
+                continue
+            finally:
+                count += 1
 
             # Connect the event linked list pointers
             if previous_event is not None:
@@ -140,7 +146,6 @@ class EncounterLog(object):
             events.append(event)
             previous_event = event
             # Increase the line number count for debugging purposes
-            count += 1
 
             # Separate logs into different objects if there are multiple logs in the file
             if isinstance(event, EndLog):

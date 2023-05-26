@@ -58,6 +58,7 @@ def main(args: Namespace):
     # TODO: gather gear changed events for player before each combat encounter and dynamically check who is using Z'ens to compute its uptime
     # TODO: compute uptimes/infos about boss mechanics (hit/dodge/cleanse of ability)
     # TODO: replace ability and unit ids in str representation by name and ids
+    # TODO: theoretical dps gain if we had full uptime
 
 
 if __name__ == "__main__":

@@ -31,8 +31,8 @@ class EncounterLog(object):
         # Ability Infos
         self.ability_infos: Dict[str, AbilityInfo] = {ability_info.ability_id: ability_info
                                                       for ability_info in self._event_dict["ABILITY_INFO"]}
-        self._ability_infos_by_name = {ability_info.name: ability_info
-                                       for ability_info in self._event_dict["ABILITY_INFO"]}
+        # self._ability_infos_by_name = {ability_info.name: ability_info
+        #                                for ability_info in self._event_dict["ABILITY_INFO"]}
         self._match_event_infos()
 
         # Unit spawns and kills
@@ -60,8 +60,8 @@ class EncounterLog(object):
     def ability_info(self, ability_id: str) -> Optional[AbilityInfo]:
         return self.ability_infos.get(ability_id)
 
-    def ability_info_by_name(self, name: str) -> Optional[AbilityInfo]:
-        return self._ability_infos_by_name.get(name)
+    # def ability_info_by_name(self, name: str) -> Optional[AbilityInfo]:
+    #     return self._ability_infos_by_name.get(name)
 
     def player_info(self, unit_id: str) -> Optional[UnitAdded]:
         return self.player_infos.get(unit_id)

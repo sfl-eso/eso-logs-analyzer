@@ -35,8 +35,8 @@ def main(args: Namespace):
     # Copy the web resources (javascript and css) to target dir.
     copy_tree(config.web.resource_path, config.export.path)
 
-    log: EncounterLog = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
-    render_log(log, config)
+    logs: EncounterLog = EncounterLog.parse_log(assert_file_exists(args.log), multiple=True)
+    render_log(logs, config)
     render_readme(config)
 
     # TODO: trial profiles that can be used/configured via config

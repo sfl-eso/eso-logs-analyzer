@@ -69,7 +69,7 @@ def render_readme(config: Config):
     return render_to_file("readme", {"title": config.export.title_prefix, "pages": pages, "url_prefix": config.web.url_prefix}, file_name)
 
 
-def render_log(encounter_log: EncounterLog, config: Config):
+def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: Config):
     debuffs = [
         "Crusher",
         "Major Breach",
@@ -85,8 +85,18 @@ def render_log(encounter_log: EncounterLog, config: Config):
 
     hostile_units = ["Oaxiltso", "Havocrel Annihilator"]
 
-    combat_encounters = CombatEncounter.load(encounter_log)
+    combat_encounters = []
+    if isinstance(encounter_log, list):
+        for log in encounter_log:
+            combat_encounters.extend(CombatEncounter.load(log))
+        encounter_log = encounter_log[0]
+    else:
+        combat_encounters = CombatEncounter.load(encounter_log)
+
     boss_encounters = [encounter for encounter in combat_encounters if encounter.is_boss_encounter]
+    # Sort first by encounter time and then by boss
+    # TODO: sort by boss order in trial and not by name
+    boss_encounters = sorted(boss_encounters, key=lambda encounter: (encounter.begin, encounter.get_boss))
 
     encounters_html = []
 

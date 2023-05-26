@@ -27,7 +27,8 @@ def debuffs_target_unit(log: EncounterLog, encounter: BeginCombat, ability_file:
         if len(uptimes) == 1:
             ability_uptimes[name] = uptimes[0]
         else:
-            merged_uptime = ability_uptimes[0]
-            for uptime in ability_uptimes[1:]:
+            merged_uptime = uptimes[0]
+            for uptime in uptimes[1:]:
                 merged_uptime = EffectUnitSpan.merge(merged_uptime, uptime)
+            ability_uptimes[name] = merged_uptime
     return ability_uptimes

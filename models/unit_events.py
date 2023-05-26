@@ -178,26 +178,6 @@ class UnitAdded(Event):
             "duration": duration
         }
 
-        # Distinguish different event types (TODO: maybe do this in UnitAdded)
-        # if isinstance(event, CombatEvent):
-        #     if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
-        #         # Damage taken
-        #         self.damage_taken_events.append(event)
-        #     elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
-        #         # Damage done
-        #         self.damage_done_events.append(event)
-        # elif isinstance(event, EffectChanged):
-        #     if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
-        #         # Debuffs taken
-        #         self.debuff_taken_events.append(event)
-        #         pass
-        #     elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
-        #         # Debuffs done
-        #         self.debuff_events.append(event)
-        #     elif event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "PLAYER_ALLY":
-        #         # Buffs done/taken
-        #         self.buff_events.append(event)
-
 
 class UnitRemoved(Event):
     event_type: str = "UNIT_REMOVED"

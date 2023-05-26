@@ -37,8 +37,8 @@ class UptimeSpan(object):
             assert start.ability.name == end.ability.name, f"Trying to create an effect span for different abilities ({start.ability}, {end.ability})"
             # Only the source or target unit has to be the same, since we want to merge multiple applications of effecfts of different units on a certain source or target unit
             assert start.unit_id == end.unit_id or start.target_unit_id == end.target_unit_id, f"Trying to create an effect span for different units ({start.unit_id}, {end.unit_id})"
-            assert start.status == "GAINED", f"Trying to create an effect span for start ability that is not of type GAINED {start}"
-            assert end.status == "FADED", f"Trying to create an effect span for start ability that is not of type FADED {end}"
+            assert start.status == "GAINED" or start.status == "UPDATED", f"Trying to create an effect span for start ability that is not of type GAINED or UPDATED {start}"
+            assert end.status == "FADED" or end.status == "UPDATED", f"Trying to create an effect span for start ability that is not of type FADED or UPDATED {end}"
 
     def duration(self) -> timedelta:
         return self.end.time - self.start.time
@@ -96,8 +96,12 @@ class EffectUnitSpan(EffectSpan):
                 span = UptimeSpan(start, event)
                 spans.append(span)
                 start = None
-            else:
+            elif event.status == "UPDATED":
                 # TODO: handle UPDATED status (stack count gets increase, i.e., with stagger)
+                span = UptimeSpan(start, event)
+                spans.append(span)
+                start = event
+            else:
                 raise RuntimeError(f"Span computation errored on span: {self}")
         if len(phantom_spans) > 0:
             logger().warn(f"Filtered {len(phantom_spans)} phantom spans in {self}")

@@ -7,6 +7,7 @@ from python_json_config import ConfigBuilder, Config
 from log import init_loggers
 from models.data import EncounterLog
 from models.postprocessing import CombatEncounter
+from trials import Rockgrove
 
 
 def cli_args() -> Namespace:
@@ -35,7 +36,10 @@ def main(args: Namespace):
     combat_encounters = CombatEncounter.load(log)
 
     for encounter in combat_encounters:
-        print(encounter)
+        if encounter.is_boss_encounter and encounter.get_boss() == Rockgrove.OAXILTSO:
+            print(encounter)
+            for boss in encounter.boss_units:
+                print(boss)
 
     # TODO: encode data in config?
     # TODO: interactive selection?

@@ -1,3 +1,8 @@
 {
-    "ability_map": "ability_map.json"
+    "ability_map": "ability_map.json",
+    "logging": {
+        "file": "debug.log",
+        "console_level": "WARNING",
+        "file_level": "DEBUG"
+    }
 }

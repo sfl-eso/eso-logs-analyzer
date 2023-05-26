@@ -66,7 +66,7 @@ class CombatEncounter(Base):
 
     def compute_debuff_uptimes(self):
         # Let every unit object process all events
-        for event in tqdm(self.event_span, desc="Computing debuff uptimes", position=1):
+        for event in tqdm(self.event_span, desc="Computing debuff uptimes", position=1, leave=False):
             if not isinstance(event, EffectChanged):
                 continue
             for unit in self.hostile_units:

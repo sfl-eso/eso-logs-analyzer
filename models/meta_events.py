@@ -101,6 +101,7 @@ class BeginCombat(Event):
     def process_combat_events(self):
         unit_dict = {event.unit_id: event for event in self.active_units}
 
+        # Process events and set unit fields where possible
         for event in self.events:
             # Set unit field for values referencing a unit
             try:
@@ -119,6 +120,13 @@ class BeginCombat(Event):
                     event.unit = unit
             except KeyError:
                 logger().warn(f"Skipping event {event} with unit id {event.unit_id} for which no unit can be found")
+
+        # Process units and set owner ids where possible (for pets)
+        for unit in self.active_units:
+            if unit.hostility == "NPC_ALLY" and unit.owner_unit_id is not None:
+                owner_unit: UnitAdded = unit_dict[unit.owner_unit_id]
+                unit.owner_unit = owner_unit
+                owner_unit.pets[self].append(unit)
 
     def check_unit_overlap(self):
         # Check that there are no units that are different but share a unit id in this encounter
@@ -143,6 +151,10 @@ class BeginCombat(Event):
             return [unit for unit in self.hostile_units if unit.is_boss]
         else:
             return None
+
+    @property
+    def player_units(self) -> List[UnitAdded]:
+        return [unit for unit in self.active_units if unit.unit_type == "PLAYER"]
 
     @classmethod
     def merge_encounters(cls, encounters: List[BeginCombat]):

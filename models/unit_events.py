@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import timedelta
+from itertools import chain
 from typing import TYPE_CHECKING, List, Dict
 
 from .event import Event
@@ -118,6 +120,8 @@ class UnitAdded(Event):
 
         self.unit_changed: List[UnitChanged] = []
         self.unit_removed: UnitRemoved = None
+        self.owner_unit: UnitAdded = None
+        self.pets: Dict[BeginCombat, List[UnitAdded]] = defaultdict(list)
 
         self.combat_events_source: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
         self.combat_events_target: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
@@ -133,18 +137,35 @@ class UnitAdded(Event):
 
     def damage_done(self, encounter: BeginCombat, unit: UnitAdded):
         from .ability_events import CombatEvent
-        damage_events: List[CombatEvent] = [event for event in self.combat_events_source[encounter] if isinstance(event, CombatEvent) and event.target_unit == unit]
+
+        def target_filter(event):
+            return isinstance(event, CombatEvent) and event.target_unit == unit
+
+        def sort_and_dps(data: dict, duration: timedelta):
+            damage_done = dict(sorted(data.items(), key=lambda t: -t[1]))
+            dps = {key: damage / duration.total_seconds() for key, damage in damage_done.items()}
+            return damage_done, dps
+
+        damage_events: List[CombatEvent] = [event for event in self.combat_events_source[encounter] if target_filter(event)]
+        pet_damage_events: List[CombatEvent] = chain(*[[event for event in pet.combat_events_source[encounter] if target_filter(event)] for pet in self.pets[encounter]])
+        all_damage_events: List[CombatEvent] = damage_events + list(pet_damage_events)
         damage_done = 0
         damage_done_by_type = defaultdict(int)
         damage_done_by_ability = defaultdict(int)
-        for event in damage_events:
+        damage_done_by_ability_name = defaultdict(int)
+        for event in all_damage_events:
             damage_done += event.damage
             damage_done_by_ability[event.ability] += event.damage
+            damage_done_by_ability_name[event.ability.name] += event.damage
             damage_done_by_type[event.damage_type] += event.damage
+
         duration = encounter.end_combat.time - encounter.time
         dps = damage_done / duration.total_seconds()
-        dps_by_type = {damage_type: damage / duration.total_seconds() for damage_type, damage in damage_done_by_type.items()}
-        dps_by_ability = {ability: damage / duration.total_seconds() for ability, damage in damage_done_by_ability.items()}
+
+        damage_done_by_type, dps_by_type = sort_and_dps(damage_done_by_type, duration)
+        damage_done_by_ability, dps_by_ability = sort_and_dps(damage_done_by_ability, duration)
+        damage_done_by_ability_name, dps_by_ability_name = sort_and_dps(damage_done_by_ability_name, duration)
+
         return {
             "dps": dps,
             "damage_done": damage_done,
@@ -152,6 +173,8 @@ class UnitAdded(Event):
             "damage_by_type": damage_done_by_type,
             "dps_by_ability": dps_by_ability,
             "damage_by_ability": damage_done_by_ability,
+            "dps_by_ability_name": dps_by_ability_name,
+            "damage_by_ability_name": damage_done_by_ability_name,
             "duration": duration
         }
 

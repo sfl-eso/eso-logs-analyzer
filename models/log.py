@@ -213,8 +213,6 @@ class EncounterLog(object):
             merged_encounters.append(past_encounters)
 
         self.combat_encounters = sorted([BeginCombat.merge_encounters(encounter_match) for encounter_match in merged_encounters], key=lambda e: e.time)
-        for encounter in self.combat_encounters:
-            print(f"Duration {encounter.end_combat.time - encounter.time} for encounter {encounter} (start at {encounter.time})")
 
     @classmethod
     def parse_log(cls, file: str, multiple: bool = False):

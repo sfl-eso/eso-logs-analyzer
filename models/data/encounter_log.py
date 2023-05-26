@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Union, List, Dict, Type, Set
 
 from utils import read_csv, get_num_lines, tqdm
-from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial
+from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
 
@@ -42,7 +42,7 @@ class EncounterLog(Base):
 
         # Match the span events with their end-counterparts and set the begin and end event fields.
         self.__match_cast_events()
-        # TODO: combat
+        self.__match_combat_events()
         self.__match_log_events()
         self.__match_trial_events()
         self.__match_unit_events()
@@ -198,8 +198,24 @@ class EncounterLog(Base):
                 self.logger.info(f"{num_unmatched_orphaned_end_casts} orphaned end cast events could not be matched to begin cast events with the same cast effect id.")
 
     def __match_combat_events(self):
-        # TODO
-        pass
+        """
+        Match begin combat encounters to their end events. Since combat happens sequentially these events should always happen sequentially as well.
+        """
+        current_encounter: BeginCombat = None
+        for event in tqdm(self._events, desc="Matching combat events"):
+            if isinstance(event, BeginCombat):
+                if current_encounter is not None:
+                    self.logger.error(f"Entering combat event {event} while already in combat event {current_encounter}")
+                current_encounter = event
+                
+            elif isinstance(event, EndCombat):
+                if current_encounter is None:
+                    self.logger.error(f"Leaving combat event {event} without being in combat")
+                    continue
+
+                event.begin_combat = current_encounter
+                current_encounter.end_combat = event
+                current_encounter = None
 
     def __match_log_events(self):
         """

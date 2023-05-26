@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from typing import TYPE_CHECKING, List, Dict
+from typing import TYPE_CHECKING, List
 
 from .enums import UnitType, RaceId, ClassId, Hostility
 from .event import Event
@@ -10,9 +9,6 @@ from .span_event import SpanCast
 if TYPE_CHECKING:
     from .unit_changed import UnitChanged
     from .unit_removed import UnitRemoved
-    from .begin_combat import BeginCombat
-    from .target_event import TargetEvent
-    from .health_regen_event import HealthRegen
 
 
 class UnitAdded(SpanCast):
@@ -81,11 +77,11 @@ class UnitAdded(SpanCast):
         # Unit object of the owner if it exists
         self.owner_unit: UnitAdded = None
 
-        # TODO: should the key here be begincombat?
-        self.pets: Dict[BeginCombat, List[UnitAdded]] = defaultdict(list)
-        self.combat_events_source: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
-        self.combat_events_target: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
-        self.health_regen_events: Dict[BeginCombat, List[HealthRegen]] = defaultdict(list)
+        # # TODO: should the key here be begincombat?
+        # self.pets: Dict[BeginCombat, List[UnitAdded]] = defaultdict(list)
+        # self.combat_events_source: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
+        # self.combat_events_target: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
+        # self.health_regen_events: Dict[BeginCombat, List[HealthRegen]] = defaultdict(list)
 
     # def __str__(self):
     #     return f"{self.__class__.__name__}(id={self.id}, unit_id={self.unit_id}, unit_type={self.unit_type}, " \

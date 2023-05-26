@@ -48,7 +48,7 @@ class EncounterLog(object):
                                                    if unit_info.unit_type == "PLAYER"}
         self.combat_encounters: List[BeginCombat] = []
         self._create_combat_encounters()
-        for encounter in tqdm(self.combat_encounters, desc="Processing encounters"):
+        for encounter in tqdm(self.combat_encounters, desc="Processing encounters", ascii=" #"):
             encounter.extract_enemies()
             encounter.process_combat_events(self)
 
@@ -127,7 +127,7 @@ class EncounterLog(object):
         count = 0
         logs = []
         previous_event = None
-        for line in tqdm(csv_file, desc=f"Parsing log {path}", ncols=180):
+        for line in tqdm(csv_file, desc=f"Parsing log {path}", ascii=" #"):
             event = Event.create(count, int(line[0]), line[1], *line[2:])
             if previous_event is not None:
                 event.previous = previous_event

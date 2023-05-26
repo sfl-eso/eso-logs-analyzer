@@ -1,7 +1,7 @@
 from .event_span import EventSpan
-from .ability_span import AbilitySpan
+from .debuff_span import DebuffSpan
 
 __all__ = [
     "EventSpan",
-    "AbilitySpan"
+    "DebuffSpan"
 ]

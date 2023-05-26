@@ -3,9 +3,9 @@ from models import Event, AbilityInfo, EffectChanged
 from .event_span import EventSpan
 
 
-class AbilitySpan(EventSpan):
+class DebuffSpan(EventSpan):
     def __init__(self, ability: AbilityInfo, start: Event, end: Event):
-        super(AbilitySpan, self).__init__(start=start, end=end)
+        super(DebuffSpan, self).__init__(start=start, end=end)
         self.ability: AbilityInfo = ability
         self.event_type = EffectChanged
 

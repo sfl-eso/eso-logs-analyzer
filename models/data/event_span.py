@@ -52,6 +52,15 @@ class EventSpan(Base):
         else:
             raise NotImplementedError
 
+    def __len__(self):
+        return self.end.order_id - self.start.order_id
+
+    def __bool__(self):
+        """
+        Overwrite so that this object does not become false, when the length is 0.
+        """
+        return True
+
     def overlaps(self, other: EventSpan) -> bool:
         return (other.start.order_id <= self.start.order_id <= other.end.order_id) \
             or (other.start.order_id <= self.end.order_id <= other.end.order_id)

@@ -7,6 +7,7 @@ from .event import Event
 if TYPE_CHECKING:
     from .ability_info import AbilityInfo
     from .unit_added import UnitAdded
+    from ..encounter_log import EncounterLog
 
 
 class PlayerInfo(Event):
@@ -67,9 +68,11 @@ class PlayerInfo(Event):
         back_bar = merged_info[4][1:-1].split(",")
         return passives, passives_active, gear, front_bar, back_bar
 
-    # TODO: add this method
-    # def update_info(self, log: EncounterLog):
-    #     self.unit = log.player_info(self.unit_id)
-    #     self.passives = [log.ability_info(ability) for ability in self._raw_passives if ability]
-    #     self.front_bar = [log.ability_info(ability) for ability in self._raw_front_bar if ability]
-    #     self.back_bar = [log.ability_info(ability) for ability in self._raw_back_bar if ability]
+    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
+        """
+        Store the player unit objects in addition to the ability infos.
+        """
+        self.unit = encounter_log.player_unit_added[self.unit_id]
+        self.passives = [encounter_log.ability_infos[int(ability)] for ability in self._raw_passives if ability]
+        self.front_bar = [encounter_log.ability_infos[int(ability)] for ability in self._raw_front_bar if ability]
+        self.back_bar = [encounter_log.ability_infos[int(ability)] for ability in self._raw_back_bar if ability]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Type, Dict, TYPE_CHECKING
+from typing import Type, Dict, TYPE_CHECKING, Generator
 
 from utils import all_subclasses
 
@@ -87,6 +87,21 @@ class Event(object):
     def previous(self, value: Event):
         self._previous = value
         value._next = self
+
+    def span(self, other: Event, inclusive: bool = False) -> Generator[Event, None, None]:
+        assert isinstance(other, Event), f"Can't create span with non-event object {other}"
+        assert self.order_id < other.order_id, f"Can't create span from {self} with {other} that does not have a higher order id"
+        # If the span is inclusive start with this event, otherwise with the next event
+        next_event = self if inclusive else self.next
+
+        while next_event != other:
+            current_event = next_event
+            next_event = current_event.next
+            yield current_event
+
+        # If the span is inclusive, finish with the given target event of the span
+        if inclusive:
+            yield other
 
     def compute_event_time(self, encounter_log: EncounterLog):
         """

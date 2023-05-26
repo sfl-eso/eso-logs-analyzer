@@ -7,8 +7,8 @@ from typing import Union, List, Dict
 from tqdm import tqdm
 
 from utils import read_csv, get_num_lines
-from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast
-from .events.enums import CastStatus
+from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved
+from .events.enums import CastStatus, UnitType
 
 
 class EncounterLog(object):
@@ -29,29 +29,20 @@ class EncounterLog(object):
         self.begin_log: BeginLog = self._event_dict[BeginLog.event_type][0]
         self.end_log: EndLog = self._event_dict[EndLog.event_type][0]
 
-        # Gather ability and effect info events and enrich them with each other
-        self.ability_infos: Dict[int, AbilityInfo] = {ability_info.ability_id: ability_info
-                                                      for ability_info in self._event_dict[AbilityInfo.event_type]}
-        self.effect_infos: Dict[int, EffectInfo] = {effect_info.ability_id: effect_info
-                                                    for effect_info in self._event_dict[EffectInfo.event_type]}
+        # Gather events by their identifying ids
+        self.ability_infos: Dict[int, AbilityInfo] = {ability_info.ability_id: ability_info for ability_info in self._event_dict[AbilityInfo.event_type]}
+        self.effect_infos: Dict[int, EffectInfo] = {effect_info.ability_id: effect_info for effect_info in self._event_dict[EffectInfo.event_type]}
+        self.player_unit_added: Dict[int, UnitAdded] = {unit.unit_id: unit for unit in self._event_dict[UnitAdded.event_type]
+                                                        if unit.unit_type == UnitType.PLAYER}
 
         for event in tqdm(self._events, "Resolving event references"):
             event.compute_event_time(self)
             event.resolve_ability_and_effect_info_references(self)
 
-        self.match_cast_events()
+        self._match_cast_events()
+        self._match_unit_events()
 
-        # # Unit spawns and kills
-        # self._match_unit_events()
-        # # self._unit_infos: Dict[tuple, List[UnitAdded]] = defaultdict(list)
-        # # for unit_added in self._event_dict["UNIT_ADDED"]:
-        # #     self._unit_infos[(unit_added.id, unit_added.unit_id)].append(unit_added)
-        # # self._unit_infos = dict(self._unit_infos)
-        #
         # # Combat encounters
-        # self.player_infos: Dict[str, UnitAdded] = {unit_info.unit_id: unit_info
-        #                                            for unit_info in self._event_dict["UNIT_ADDED"]
-        #                                            if unit_info.unit_type == "PLAYER"}
         # self.combat_encounters: List[BeginCombat] = []
         # self._create_combat_encounters()
         # for encounter in tqdm(self.combat_encounters, desc="Initializing encounters"):
@@ -70,7 +61,10 @@ class EncounterLog(object):
 
     __repr__ = __str__
 
-    def match_cast_events(self):
+    def _match_cast_events(self):
+        """
+        Match casts that are separated into a being and end cast event.
+        """
         # The cache will be used to confirm that every cast was ended, and the dict is just needed for lookups of duplicate end cast events
         begin_cast_cache: Dict[str, BeginCast] = {}
         begin_cast_dict: Dict[str, BeginCast] = {}
@@ -99,6 +93,27 @@ class EncounterLog(object):
             pass
             # TODO: logging
             # logger().warn(f"Found {len(begin_cast_cache)} begin events without end")
+
+    def _match_unit_events(self):
+        """
+        Match unit events of their spawn, changes and when they are removed.
+        Unit ids of removed units may be reused for different units later on. Thus, we need to iterate over the events in their order.
+        """
+        added_units = {}
+        for event in tqdm(self._events, desc="Matching unit events"):
+            if isinstance(event, UnitAdded):
+                # TODO: logging?
+                assert event.unit_id not in added_units, f"Duplicate unit added event with id {event.id}"
+                added_units[event.unit_id] = event
+            elif isinstance(event, UnitRemoved):
+                unit_added = added_units[event.unit_id]
+                unit_added.unit_removed = event
+                event.unit_added = unit_added
+                del added_units[event.unit_id]
+            elif isinstance(event, UnitChanged):
+                unit_added = added_units[event.unit_id]
+                unit_added.unit_changed.append(event)
+                event.unit_added = unit_added
 
     @classmethod
     def parse_log(cls, file: Union[str, Path], multiple: bool = False) -> Union[EncounterLog, List[EncounterLog]]:

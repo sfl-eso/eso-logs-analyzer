@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from .unit_removed import UnitRemoved
     from .begin_combat import BeginCombat
     from .target_event import TargetEvent
-    from .health_regen import HealthRegen
+    from .health_regen_event import HealthRegen
 
 
 class UnitAdded(Event):

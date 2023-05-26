@@ -6,13 +6,12 @@ from typing import Callable, TYPE_CHECKING
 from tqdm import tqdm
 
 from .parallel_process import ParallelProcess
-from ..models import Base
 
 if TYPE_CHECKING:
     from .result_collector import ResultCollector
 
 
-class ParallelTask(Base):
+class ParallelTask:
     def __init__(self,
                  description: str,
                  num_processes: int,

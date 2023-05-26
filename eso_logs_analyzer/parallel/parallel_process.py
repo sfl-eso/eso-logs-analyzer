@@ -1,13 +1,10 @@
-import uuid
 from multiprocessing import Process
 from multiprocessing.queues import Queue
 from queue import Empty
 from typing import Callable
 
-from ..models import Base
 
-
-class ParallelProcess(Process, Base):
+class ParallelProcess(Process):
     def __init__(self,
                  input_queue: Queue,
                  output_queue: Queue,
@@ -24,8 +21,6 @@ class ParallelProcess(Process, Base):
         @param task_function_kwargs: Keyword arguments that are passed to the task function.
         """
         super().__init__(*args, **kwargs)
-
-        self.process_id = str(uuid.uuid4())
         self.input_queue = input_queue
         self.output_queue = output_queue
 
@@ -33,13 +28,10 @@ class ParallelProcess(Process, Base):
         self.task_function_args = task_function_args or []
         self.task_function_kwargs = task_function_kwargs or {}
 
-        self.logger.debug(f"Created parallel process {self.process_id}")
-
     def run(self):
         while True:
             try:
                 input_object = self.input_queue.get()
                 self.output_queue.put(self.task_function(input_object, *self.task_function_args, **self.task_function_kwargs))
             except Empty:
-                self.logger.debug(f"Input queue for process {self.process_id} is empty. Exiting process.")
                 break

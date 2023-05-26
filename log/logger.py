@@ -1,7 +1,10 @@
 import logging
+import sys
 
 from python_json_config import Config
 from python_json_config.config_node import ConfigNode
+
+from .event_formatter import EventFormatter
 
 __LOG_INITIALIZED = False
 __LOG_CONFIG: ConfigNode = None
@@ -52,5 +55,24 @@ def get_logger(name: str, console_level=None, file_level=None):
     file_handler.setLevel(file_level)
     file_handler.setFormatter(__log_formatter())
     logger.addHandler(file_handler)
+
+    return logger
+
+
+def get_event_logger(name: str, console_level=None):
+    global __LOG_CONFIG
+    # logging.getLevelName maps from level to name and from name to level
+    # Log level 0 indicates the log level is unset. In that we also set the level to the pre-defined one
+    console_level = console_level or logging.getLevelName(__LOG_CONFIG.console_level)
+
+    logger = logging.getLogger(name=f"{name}.EventLogger")
+    # Disable this logger propagating its messages to its parent loggers (such as the root logger)
+    # Disabling this avoids printing each message twice (https://stackoverflow.com/a/44426266)
+    logger.propagate = False
+    logger.handlers.clear()
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(console_level)
+    stream_handler.setFormatter(EventFormatter())
+    logger.addHandler(stream_handler)
 
     return logger

@@ -4,9 +4,9 @@ from typing import Union
 
 from python_json_config import ConfigBuilder, Config
 
-# from loading import EncounterLog
 from log import init_loggers
 from models.data import EncounterLog
+from models.postprocessing import CombatEncounter
 
 
 def cli_args() -> Namespace:
@@ -30,11 +30,16 @@ def main(args: Namespace):
     """
     config: Config = ConfigBuilder().parse_config(str(assert_file_exists(args.config)))
     init_loggers(config)
+
+    log: EncounterLog = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
+    combat_encounters = CombatEncounter.load(log)
+
+    for encounter in combat_encounters:
+        print(encounter)
+
     # TODO: encode data in config?
     # TODO: interactive selection?
     # ability_map = assert_file_exists(config.ability_map)
-    log = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
-    log
     # encounters: List[Encounter] = [Encounter(begin_combat) for begin_combat in
     #                                tqdm(log.combat_encounters, desc="Processing encounters")]
     # for encounter in encounters:

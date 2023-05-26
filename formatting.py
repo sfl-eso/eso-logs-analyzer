@@ -8,12 +8,16 @@ from models.postprocessing import CombatEncounter
 __SECONDS_IN_A_MINUTE = 60
 __RED = Color("#ffaaaa")
 __GREEN = Color("#bfffbe")
+__INVALID = Color("#ff6ee2")
 __GRADIENT = list(__RED.range_to(__GREEN, steps=101))
 
 
 def __get_color(value: float) -> str:
-    value = int(value * 100)
-    return __GRADIENT[value].hex
+    try:
+        value = int(value * 100)
+        return __GRADIENT[value].hex
+    except IndexError:
+        return __INVALID.hex
 
 
 def __seconds_to_str(seconds: float, decimal_digits: int) -> str:

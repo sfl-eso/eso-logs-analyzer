@@ -31,7 +31,8 @@ class CombatEncounter(Base):
 
         self.hostile_units = self.load_hostile_units()
         self.boss_units = [unit for unit in self.hostile_units if unit.is_boss]
-        self.trialId = self.begin.begin_trial.trial_id
+        if self.begin.begin_trial is not None:
+            self.trialId = self.begin.begin_trial.trial_id
 
     def __str__(self):
         name = self.get_boss().value if self.is_boss_encounter else self.DEFAULT_NAME
@@ -44,7 +45,8 @@ class CombatEncounter(Base):
         return len(self.boss_units) > 0
 
     def get_boss(self):
-        return get_boss_for_trial(self.trialId, self.boss_units)
+        if self.trialId is not None:
+            return get_boss_for_trial(self.trialId, self.boss_units)
 
     def load_hostile_units(self) -> List[UnitAdded]:
         """

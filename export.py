@@ -41,8 +41,11 @@ def generate_markdown_file(config: Config, encounter_log: EncounterLog, combat_e
         if not encounter.is_boss_encounter:
             continue
 
-        # TODO: filter for clears/make bosses configurable
-        if encounter.get_boss() != Rockgrove.OAXILTSO:
+        try:
+            # TODO: filter for clears/make bosses configurable
+            if encounter.get_boss() != Rockgrove.OAXILTSO:
+                continue
+        except NotImplementedError:
             continue
 
         # TODO: is the encounter clear or not

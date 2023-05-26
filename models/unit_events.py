@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from collections import defaultdict
+from typing import TYPE_CHECKING, List, Dict
 
 from .event import Event
 
 if TYPE_CHECKING:
     from .log import EncounterLog
     from .ability_events import AbilityInfo, TargetEvent, HealthRegen
+    from .meta_events import BeginCombat
 
 
 class PlayerInfo(Event):
@@ -114,9 +116,9 @@ class UnitAdded(Event):
         self.unit_changed: List[UnitChanged] = []
         self.unit_removed: UnitRemoved = None
 
-        self.combat_events_source: List[TargetEvent] = []
-        self.combat_events_target: List[TargetEvent] = []
-        self.health_regen_events: List[HealthRegen] = []
+        self.combat_events_source: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
+        self.combat_events_target: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
+        self.health_regen_events: Dict[BeginCombat, List[HealthRegen]] = defaultdict(list)
 
     def __str__(self):
         return f"{self.__class__.__name__}(id={self.id}, unit_id={self.unit_id}, unit_type={self.unit_type}, " \
@@ -125,6 +127,32 @@ class UnitAdded(Event):
                f"unit_removed={self.unit_removed is not None})"
 
     __repr__ = __str__
+
+    def damage_done(self, encounter: BeginCombat, unit: UnitAdded):
+        from .ability_events import CombatEvent
+
+        damage_events = [event for event in self.combat_events_source[encounter] if isinstance(event, CombatEvent) and event.target_unit == unit]
+        damage_events
+
+        # Distinguish different event types (TODO: maybe do this in UnitAdded)
+        # if isinstance(event, CombatEvent):
+        #     if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
+        #         # Damage taken
+        #         self.damage_taken_events.append(event)
+        #     elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
+        #         # Damage done
+        #         self.damage_done_events.append(event)
+        # elif isinstance(event, EffectChanged):
+        #     if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
+        #         # Debuffs taken
+        #         self.debuff_taken_events.append(event)
+        #         pass
+        #     elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
+        #         # Debuffs done
+        #         self.debuff_events.append(event)
+        #     elif event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "PLAYER_ALLY":
+        #         # Buffs done/taken
+        #         self.buff_events.append(event)
 
 
 class UnitRemoved(Event):

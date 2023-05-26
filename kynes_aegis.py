@@ -3,14 +3,18 @@ from typing import List, Dict
 
 from models import EncounterLog, BeginCombat
 
-boss_names = ["Yandir the Butcher", "Captain Vrol", "Lord Falgravn"]
+YANDIR_THE_BUTCHER = "Yandir the Butcher"
+CAPTAIN_VROL = "Captain Vrol"
+LORD_FALGRAVN = "Lord Falgravn"
+
+boss_names = [YANDIR_THE_BUTCHER, CAPTAIN_VROL, LORD_FALGRAVN]
 
 
 def find_boss_encounters(encounter_log: EncounterLog) -> Dict[str, List[BeginCombat]]:
     boss_encounters = defaultdict(list)
     for boss in boss_names:
         for encounter in encounter_log.combat_encounters:
-            units = [unit.name for unit in encounter.extract_hostile_units()]
+            units = [unit.name for unit in encounter.hostile_units]
             if boss in units:
                 boss_encounters[boss].append(encounter)
     return dict(boss_encounters)

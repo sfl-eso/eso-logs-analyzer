@@ -3,7 +3,7 @@ import logging
 __logger: logging.Logger = None
 
 
-def create_logger(name="esologs", file="/mnt/g/Jan/Projects/ESOLogs/debug.log", console_level=logging.INFO, file_level=logging.DEBUG):
+def create_logger(name="esologs", file="/mnt/g/Jan/Projects/ESOLogs/debug.log", console_level=logging.ERROR, file_level=logging.DEBUG):
     # Empty log file
     with open(file, "w") as log_file:
         pass

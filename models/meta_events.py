@@ -76,8 +76,13 @@ class BeginCombat(Event):
         self.end_combat: EndCombat = None
         self.events: List[Event] = []
 
+        # Units that are alive/active as the encounter starts
         self.start_units: List[UnitAdded] = []
+        # Units that are alive/active during the encounter
+        self.active_units: List[UnitAdded] = []
+        # Units that are alive/active as the encounter ends
         self.end_units: List[UnitAdded] = []
+        # All enemy units that appear during the encounter
         self.hostile_units: List[UnitAdded] = []
 
         self.buff_events: list = []
@@ -93,47 +98,60 @@ class BeginCombat(Event):
     __repr__ = __str__
 
     def extract_hostile_units(self):
-        all_units = set(self.start_units + self.end_units)
-        units_added = [event for event in self.events if isinstance(event, UnitAdded)]
-        all_units = all_units.union(units_added)
-        self.hostile_units = [unit for unit in all_units if unit.hostility == "HOSTILE"]
+        self.hostile_units = [unit for unit in self.active_units if unit.hostility == "HOSTILE"]
 
-    def process_combat_events(self, log: EncounterLog):
+    def process_combat_events(self):
+        unit_dict = {event.unit_id: event for event in self.active_units}
+
         for event in self.events:
-            # Set unit field for values referencing a unit (TODO: maybe do this in EncounterLog)
-            if isinstance(event, TargetEvent):
-                unit = log.unit_info(event.unit_id, event.id)
-                if unit is not None:
-                    unit.combat_events_source.append(event)
+            # Set unit field for values referencing a unit
+            try:
+                if isinstance(event, TargetEvent):
+                    unit = unit_dict[event.unit_id]
+                    if unit is not None:
+                        unit.combat_events_source[self].append(event)
+                        event.unit = unit
+                    target_unit = unit_dict[event.target_unit_id]
+                    if target_unit is not None:
+                        target_unit.combat_events_target[self].append(event)
+                        event.target_unit = target_unit
+                elif isinstance(event, HealthRegen):
+                    unit = unit_dict[event.unit_id]
+                    unit.health_regen_events[self].append(event)
                     event.unit = unit
-                target_unit = log.unit_info(event.target_unit_id, event.id)
-                if target_unit is not None:
-                    target_unit.combat_events_target.append(event)
-                    event.target_unit = target_unit
-            elif isinstance(event, HealthRegen):
-                unit = log.unit_info(event.unit_id, event.id)
-                unit.health_regen_events.append(event)
-                event.unit = unit
+            except KeyError:
+                logger().warn(f"Skipping event {event} with unit id {event.unit_id} for which no unit can be found")
 
             # Distinguish different event types (TODO: maybe do this in UnitAdded)
-            if isinstance(event, CombatEvent):
-                if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
-                    # Damage taken
-                    self.damage_taken_events.append(event)
-                elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
-                    # Damage done
-                    self.damage_done_events.append(event)
-            elif isinstance(event, EffectChanged):
-                if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
-                    # Debuffs taken
-                    self.debuff_taken_events.append(event)
-                    pass
-                elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
-                    # Debuffs done
-                    self.debuff_events.append(event)
-                elif event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "PLAYER_ALLY":
-                    # Buffs done/taken
-                    self.buff_events.append(event)
+            # if isinstance(event, CombatEvent):
+            #     if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
+            #         # Damage taken
+            #         self.damage_taken_events.append(event)
+            #     elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
+            #         # Damage done
+            #         self.damage_done_events.append(event)
+            # elif isinstance(event, EffectChanged):
+            #     if event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "HOSTILE":
+            #         # Debuffs taken
+            #         self.debuff_taken_events.append(event)
+            #         pass
+            #     elif event.target_unit.hostility == "HOSTILE" and event.unit.hostility == "PLAYER_ALLY":
+            #         # Debuffs done
+            #         self.debuff_events.append(event)
+            #     elif event.target_unit.hostility == "PLAYER_ALLY" and event.unit.hostility == "PLAYER_ALLY":
+            #         # Buffs done/taken
+            #         self.buff_events.append(event)
+
+    def check_unit_overlap(self):
+        # Check that there are no units that are different but share a unit id in this encounter
+        unique_units = set(self.start_units).union(set(self.end_units)).union(set(self.active_units))
+        unique_unit_ids = set([event.unit_id for event in unique_units])
+        assert len(unique_units) == len(unique_unit_ids), f"Encounter contains multiple units with the same unit id: {self}"
+
+        # Confirm that the active unit list contains all units that are in the start and end units
+        start_end = set(self.start_units).union(set(self.end_units))
+        non_active_units = start_end.difference(set(self.active_units))
+        assert len(non_active_units) == 0, f"Encounter has start or end units than are not listed as active: {self}"
 
     # def compute_uptimes(self, log: EncounterLog):
     #     # Keep track of data in the form of Dict(unit_id -> Dict(ability_id -> object))

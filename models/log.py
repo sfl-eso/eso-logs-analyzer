@@ -32,10 +32,10 @@ class EncounterLog(object):
 
         # Unit spawns and kills
         self._match_unit_events()
-        self._unit_infos: Dict[str, List[UnitAdded]] = defaultdict(list)
-        for unit_added in self._event_dict["UNIT_ADDED"]:
-            self._unit_infos[unit_added.unit_id].append(unit_added)
-        self._unit_infos = dict(self._unit_infos)
+        # self._unit_infos: Dict[tuple, List[UnitAdded]] = defaultdict(list)
+        # for unit_added in self._event_dict["UNIT_ADDED"]:
+        #     self._unit_infos[(unit_added.id, unit_added.unit_id)].append(unit_added)
+        # self._unit_infos = dict(self._unit_infos)
 
         # Combat encounters
         self.player_infos: Dict[str, UnitAdded] = {unit_info.unit_id: unit_info
@@ -44,8 +44,11 @@ class EncounterLog(object):
         self.combat_encounters: List[BeginCombat] = []
         self._create_combat_encounters()
         for encounter in tqdm(self.combat_encounters, desc="Processing encounters", ascii=" #"):
+            # First check that we won't get unit id collisions in this encounter
+            encounter.check_unit_overlap()
+            # Extract all hostile units that are active during this encounter
             encounter.extract_hostile_units()
-            encounter.process_combat_events(self)
+            encounter.process_combat_events()
 
     def __str__(self):
         return f"{self.__class__.__name__}(begin={self._begin_log.time}, end={self._end_log.time})"
@@ -57,7 +60,7 @@ class EncounterLog(object):
         begin_cast_cache: Dict[str, BeginCast] = {}
         begin_cast_dict: Dict[str, BeginCast] = {}
 
-        for event in tqdm(self._events, desc="Creating event metadata"):
+        for event in tqdm(self._events, desc="Creating event metadata", ascii=" #", position=1, leave=False):
             # Set the epoch time for each event by computing the diff to the begin log event
             if not isinstance(event, TrialInit):
                 event.time = self._begin_log.event_time(event.id)
@@ -74,7 +77,7 @@ class EncounterLog(object):
                 try:
                     begin_event = begin_cast_dict[event.cast_effect_id]
                 except KeyError as e:
-                    logger().error(f"No begin cast for end cast {event}")
+                    logger().warn(f"No begin cast for end cast {event}")
                     continue
                 event.begin_cast = begin_event
                 if event.status == "COMPLETED" and begin_event.end_cast is not None:
@@ -100,13 +103,8 @@ class EncounterLog(object):
         # Stringify in case we get integers
         return self.player_infos[str(unit_id)]
 
-    def unit_info(self, unit_id: str, event_id: int) -> Optional[UnitAdded]:
-        unit_added = self._unit_infos.get(unit_id)
-        if unit_added is None:
-            return
-        # Return the event that occurred the shortest time delta before the current event
-        unit_added = sorted([unit for unit in unit_added if unit.id <= event_id], key=lambda unit: event_id - unit.id)
-        return unit_added[0]
+    # def unit_info(self, unit_id: str, event_id: int) -> UnitAdded:
+    #     return self._unit_infos[(event_id, unit_id)]
 
     def _match_event_infos(self):
         for effect_info in self._event_dict["EFFECT_INFO"]:
@@ -114,7 +112,10 @@ class EncounterLog(object):
 
     def _create_combat_encounters(self):
         current_encounter: BeginCombat = None
+        # Track units that are alive at the beginning and end of an encounter
         unit_pool: Dict[str, UnitAdded] = {}
+        # Track units that occur as actors during an encounter (i.e., they may spawn and die in the same encounter)
+        active_units = []
         for event in self._events:
             # Skip info events since they are queried separately
             if isinstance(event, AbilityInfo) or isinstance(event, EffectInfo):
@@ -123,6 +124,8 @@ class EncounterLog(object):
             # Track active units so encounters contain units spawned before combat started
             if isinstance(event, UnitAdded):
                 unit_pool[event.unit_id] = event
+                # Track this unit for this encounter even if it dies before the encounter ends
+                active_units.append(event)
             elif isinstance(event, UnitRemoved):
                 del unit_pool[event.unit_id]
 
@@ -130,9 +133,17 @@ class EncounterLog(object):
             if isinstance(event, BeginCombat):
                 current_encounter = event
                 current_encounter.start_units = list(unit_pool.values())
+                # Reset the active units to the units that are alive as the encounter starts
+                active_units = current_encounter.start_units
             elif isinstance(event, EndCombat):
                 current_encounter.end_combat = event
                 current_encounter.end_units = list(unit_pool.values())
+
+                # Save the active units and reset the count for the next event
+                current_encounter.active_units = active_units
+                active_units = []
+
+                # Mark the end encounter event for the current encounter
                 event.begin_combat = current_encounter
                 self.combat_encounters.append(current_encounter)
                 current_encounter = None
@@ -173,7 +184,7 @@ class EncounterLog(object):
         count = 0
         logs = []
         previous_event = None
-        for line in tqdm(csv_file, desc=f"Parsing log {path}", ascii=" #"):
+        for line in tqdm(csv_file, desc=f"Parsing log {path}", ascii=" #", position=0):
             event = Event.create(count, int(line[0]), line[1], *line[2:])
             if previous_event is not None:
                 event.previous = previous_event

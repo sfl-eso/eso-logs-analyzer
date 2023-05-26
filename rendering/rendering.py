@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 from typing import List, Dict, Union
 
@@ -21,6 +22,20 @@ class Cell:
     def __init__(self, value: str, color: Color = None):
         self.value = value
         self.color = color
+
+
+def __render_table(**kwargs) -> str:
+    context = dict(kwargs)
+    # Unique for each table to enable collapsing with boostrap
+    context["table_id"] = str(uuid.uuid4())
+    return render_template("table", context)
+
+
+def __render_encounter(**kwargs) -> str:
+    context = dict(kwargs)
+    # Unique for each encounter to enable collapsing with boostrap
+    context["encounter_id"] = str(uuid.uuid4())
+    return render_template("encounter", context)
 
 
 def render_template(template_name: str, context: dict) -> str:
@@ -52,12 +67,14 @@ def render_log(encounter_log: EncounterLog, config: Config):
         "Shock Weakness"
     ]
 
-    units = ["Oaxiltso", "Havocrel Annihilator"]
+    hostile_units = ["Oaxiltso", "Havocrel Annihilator"]
 
     combat_encounters = CombatEncounter.load(encounter_log)
     boss_encounters = [encounter for encounter in combat_encounters if encounter.is_boss_encounter]
 
     encounters_html = []
+
+    log_trial_name = ""
 
     # TODO: group encounters by trial and trial boss (under a separate heading level (h1?))
     for encounter in tqdm(boss_encounters, desc="Computing boss encounter uptimes"):
@@ -69,31 +86,47 @@ def render_log(encounter_log: EncounterLog, config: Config):
         except NotImplementedError:
             continue
 
+        # Use the trial of the first encounter for the log title
+        if not log_trial_name:
+            log_trial_name = encounter.trialId.name.capitalize()
+
+        # Compute debuff uptimes
         encounter.compute_debuff_uptimes()
-        encounters_html.append(render_encounter(encounter, abilities=debuffs, units=units))
+
+        # Render all data about the encounter
+        encounters_html.append(render_encounter(encounter, debuffs=debuffs, hostile_units=hostile_units))
+
+    title_timestamp = encounter_log.begin_log.time.strftime("%d.%m.%Y (%H:%M:%S)")
+    log_title = f"{config.export.title_prefix} - {log_trial_name} - {title_timestamp}"
 
     timestamp = encounter_log.begin_log.time.strftime("%Y_%m_%d_%H_%M_%S")
-    # TODO: write to configured directory
-    # file_name = f"{config.export.dir}/{timestamp}_{config.export.file_suffix}.html"
-    file_name = f"output/{timestamp}_{config.export.file_suffix}.html"
-    # TODO: add trial name and custom text
-    log_title = f"Test Log {timestamp}"
+    # file_name = f"{config.export.dir}/{log_trial_name.lower()}_{timestamp}_{config.export.file_suffix}.html"
+    file_name = f"output/{log_trial_name.lower()}_{timestamp}_{config.export.file_suffix}.html"
+
     return render_to_file("log", {"title": log_title, "encounters": encounters_html}, file_name)
 
 
-def render_encounter(encounter: CombatEncounter, units: List[str] = None, abilities: List[str] = None) -> str:
+def render_encounter(encounter: CombatEncounter, hostile_units: List[str] = None, debuffs: List[str] = None) -> str:
+    # TODO: counter of wipes/clears
+    boss_name = encounter.get_boss().value
+    boss_unit = [unit for unit in encounter.boss_units if unit.unit.name == boss_name][0]
     is_clear = all([unit.was_killed for unit in encounter.boss_units])
-    # TODO: static values and counter
-    clear_text = "Kill" if is_clear else "Wipe"
-
-    encounter_title = f"{clear_text} - {encounter.get_boss().value} - {encounter.begin.time.strftime('%H:%M:%S')} - {format_time(encounter.event_span.duration)}"
+    final_boss_hp = float(boss_unit.uptime_end_event.target_current_health) / float(boss_unit.uptime_end_event.target_maximum_health)
+    # Don't show boss hp if it was a clear
+    final_boss_hp = "" if is_clear else f" - {format_uptime(final_boss_hp)[0]}"
+    encounter_title = f"{boss_name} - {format_time(encounter.event_span.duration)}{final_boss_hp} - ({encounter.begin.time.strftime('%H:%M:%S')})"
 
     # TODO: dps
     # TODO: buff uptimes
     # TODO: mechanic stats
     # TODO: special uptimes
 
-    # Debuff uptimes
+    debuff_table = __render_debuff_table(encounter=encounter, units=hostile_units, abilities=debuffs)
+
+    return __render_encounter(title=encounter_title, debuff_table=debuff_table, is_clear=is_clear)
+
+
+def __render_debuff_table(encounter: CombatEncounter, units: List[str] = None, abilities: List[str] = None):
     header_row: List[str] = [__NAME_KEY]
     rows: List[Dict[str, Cell]] = []
 
@@ -117,6 +150,4 @@ def render_encounter(encounter: CombatEncounter, units: List[str] = None, abilit
 
         rows.append(row)
 
-    debuff_table = render_template("table", {"title": "Debuff uptimes", "header_row": header_row, "active_row": target_active_times, "rows": rows, "open": True})
-
-    return render_template("encounter", {"title": encounter_title, "debuff_table": debuff_table, "open": False})
+    return __render_table(title="Debuff uptimes", header_row=header_row, active_row=target_active_times, rows=rows)

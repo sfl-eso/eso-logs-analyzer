@@ -1,17 +1,37 @@
 {# Input vars:
 title: header for the table
+table_id: unique id for the table
 header_row: list of strings that make up the header row
 active_row: list of dictionaries that describe the active time for each target
 rows: list of dictionaries pointing from column name to a cell object
-open: boolean if the table should start open or closed
 #}
-{% set details_state = "open" if open else "" %}
 
-<details {{ details_state }}>
-    <summary><h3>{{ title }}</h3></summary>
+<div>
+    {# Collapse control for the table
+    text-decoration-none: remove link coloring
+    text-dark: color text dark
+    #}
+    {#    <p><a class="text-decoration-none text-dark" data-bs-toggle="collapse" href="#{{ table_id }}" role="button" aria-expanded="false" aria-controls="{{ table_id }}">#}
+    {#        <h3>{{ title }}</h3>#}
+    {#    </a></p>#}
 
-    <div class="p-2">
-        <table class="table table-striped">
+    <h3 class="text-dark">{{ title }}</h3>
+
+    {#
+    p-2: padding
+    --collapse: make this element collapsible
+    --show: show this table by default
+    #}
+    <div class="p-2" id="{{ table_id }}">
+        {#
+        table: enable boostrap table formatting
+        table-striped: color rows in stripes
+        w-auto: make column width at most text width (i.e., no extra whitespace)
+        #}
+        <table class="table table-striped w-auto">
+            {#
+            table-light: color the background of the header cells light grey
+            #}
             <thead class="table-light">
             {# Actual header fields #}
             <tr>
@@ -33,6 +53,9 @@ open: boolean if the table should start open or closed
             </tr>
             </thead>
 
+            {#
+            table-group-divider: draw a bold horizontal line between header and body
+            #}
             <tbody class="table-group-divider">
             {% for row in rows %}
                 <tr>
@@ -51,4 +74,4 @@ open: boolean if the table should start open or closed
             </tbody>
         </table>
     </div>
-</details>
+</div>

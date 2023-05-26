@@ -1,11 +1,32 @@
 {# Input vars:
 title: header for the encounter
 debuff_table: raw html displaying the debuff table
-open: boolean if the encounter should start open or closed
+is_clear: boolean indicating if the encounter was a clear
+encounter_id: unique id to enable collapsing of encounters with bootstrap
 #}
-{% set details_state = "open" if open else "" %}
-<details {{ details_state }}>
-    <summary><h2>{{ title }}</h2></summary>
 
-    {{ debuff_table }}
-</details>
+{#
+p-2: padding
+#}
+<div class="p-2">
+    {# If the encounter was a clear, color the header element green. Otherwise, color it red.
+    text-success-emphasis: light green
+    text-danger-emphasis: light red
+    #}
+    {% set encounter_title_color = "text-success" if is_clear else "text-danger" %}
+
+    {# Collapse control for the encounter
+    text-decoration-none: remove link coloring
+    #}
+    <p><a class="text-decoration-none {{ encounter_title_color }}" data-bs-toggle="collapse" href="#{{ encounter_id }}" role="button" aria-expanded="false"
+          aria-controls="{{ encounter_id }}">
+        <h2>{{ title }}</h2>
+    </a></p>
+
+    {#
+    collapse: make this element collapsible
+    #}
+    <div class="collapse" id="{{ encounter_id }}">
+        {{ debuff_table }}
+    </div>
+</div>

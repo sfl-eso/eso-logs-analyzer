@@ -28,6 +28,8 @@ class EffectUptime(Base):
         self.uptime_end_event = self.__compute_new_uptime_boundary(reversed(target_uptime))
         self.uptime_begin = self.uptime_begin_event.time
         self.uptime_end = self.uptime_end_event.time
+        self.logger.debug(f"Shortening uptime begin for {ability_name} on unit {self.target_unit} from {uptime_begin.time} to {self.uptime_begin}")
+        self.logger.debug(f"Shortening uptime end for {ability_name} on unit {self.target_unit} from {uptime_end.time} to {self.uptime_end}")
 
     def __compute_new_uptime_boundary(self, iterator) -> CombatEvent:
         """

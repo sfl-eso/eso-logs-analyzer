@@ -1,5 +1,4 @@
 import csv
-import json
 import sys
 from datetime import datetime
 from typing import Set, Generator, Union
@@ -71,10 +70,3 @@ def all_subclasses(cls):
         else:
             classes.extend(all_subclasses(subclass))
     return classes
-
-
-def ability_map():
-    global _ability_map
-    if _ability_map is None:
-        _ability_map = json.load(open("ability_map.json"))
-    return _ability_map

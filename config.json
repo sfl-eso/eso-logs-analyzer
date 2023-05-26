@@ -5,8 +5,12 @@
         "file_level": "DEBUG"
     },
     "export": {
-        "dir": "/mnt/d/projects/dragon-aegis-ad-logs",
+        "path": "/mnt/d/projects/dragon-aegis-ad-logs",
         "file_suffix": "dragon_aegis",
         "title_prefix": "DA - Ancient Dragons"
+    },
+    "web": {
+        "url_prefix": "dragon-aegis-ad-logs",
+        "resource_path": "web-resources"
     }
 }

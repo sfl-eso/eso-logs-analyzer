@@ -1,4 +1,5 @@
 from argparse import Namespace, ArgumentParser
+from distutils.dir_util import copy_tree
 from pathlib import Path
 from typing import Union
 
@@ -6,7 +7,7 @@ from python_json_config import ConfigBuilder, Config
 
 from log import init_loggers
 from models.data import EncounterLog
-from rendering import render_log
+from rendering import render_log, render_readme
 
 
 def cli_args() -> Namespace:
@@ -31,8 +32,12 @@ def main(args: Namespace):
     config: Config = ConfigBuilder().parse_config(str(assert_file_exists(args.config)))
     init_loggers(config)
 
+    # Copy the web resources (javascript and css) to target dir.
+    copy_tree(config.web.resource_path, config.export.path)
+
     log: EncounterLog = EncounterLog.parse_log(assert_file_exists(args.log), multiple=False)
     render_log(log, config)
+    render_readme(config)
 
     # TODO: trial profiles that can be used/configured via config
     # TODO: gather gear changed events for player before each combat encounter and dynamically check who is using Z'ens to compute its uptime
@@ -42,6 +47,8 @@ def main(args: Namespace):
     # TODO: sort abilities by role
     # TODO: group abilities by role (separate tables)?
     # TODO: auto collapse encounters and mark the boss hp % when we died (or cleared the encounter)
+
+    # TODO: store metadata for generating of index.html
 
 
 if __name__ == "__main__":

@@ -1,0 +1,29 @@
+{% extends "base.jinja2" %}
+
+{# Input vars:
+title: header for the page
+pages: list of tuples of page urls and page titles
+url_prefix: prefix of the url path
+#}
+
+{% block title %}
+    {{ title }}
+{% endblock title %}
+
+
+{% block content %}
+
+    {#
+    list-group: group elements in a box
+    list-group-numbered: number items
+    p-2: padding
+    #}
+    <ol class="list-group list-group-numbered p-2">
+        {% for page in pages %}
+            {% set relative_url = page[0] %}
+            {% set name = page[1] %}
+            <li class="list-group-item"><a href="/{{ url_prefix }}/{{ relative_url }}" class="link-primary">{{ name }}</a></li>
+        {% endfor %}
+    </ol>
+
+{% endblock content %}

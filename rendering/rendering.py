@@ -14,7 +14,6 @@ from trials import Rockgrove
 from utils import tqdm
 
 __TEMPLATE_DIR = "templates/"
-
 __NAME_KEY = "Name"
 
 
@@ -49,8 +48,25 @@ def render_template(template_name: str, context: dict) -> str:
 
 
 def render_to_file(template_name: str, context: dict, output: Union[str, Path]) -> None:
+    print(f"Rendering template {template_name} to {output}")
     with open(output, "w") as out_file:
         out_file.write(render_template(template_name, context))
+
+
+def render_readme(config: Config):
+    pages = []
+
+    out_path = Path(config.export.path)
+    for file in out_path.iterdir():
+        if not file.is_file() or file.suffix != ".html" or file.name == "index.html":
+            continue
+
+        # TODO: read html and get title element
+        name = file.stem
+        pages.append((file.name, name))
+
+    file_name = f"{config.export.path}/index.html"
+    return render_to_file("readme", {"title": config.export.title_prefix, "pages": pages, "url_prefix": config.web.url_prefix}, file_name)
 
 
 def render_log(encounter_log: EncounterLog, config: Config):
@@ -100,10 +116,9 @@ def render_log(encounter_log: EncounterLog, config: Config):
     log_title = f"{config.export.title_prefix} - {log_trial_name} - {title_timestamp}"
 
     timestamp = encounter_log.begin_log.time.strftime("%Y_%m_%d_%H_%M_%S")
-    # file_name = f"{config.export.dir}/{log_trial_name.lower()}_{timestamp}_{config.export.file_suffix}.html"
-    file_name = f"output/{log_trial_name.lower()}_{timestamp}_{config.export.file_suffix}.html"
+    file_name = f"{config.export.path}/{log_trial_name.lower()}_{timestamp}_{config.export.file_suffix}.html"
 
-    return render_to_file("log", {"title": log_title, "encounters": encounters_html}, file_name)
+    return render_to_file("log", {"title": log_title, "encounters": encounters_html, "url_prefix": config.web.url_prefix}, file_name)
 
 
 def render_encounter(encounter: CombatEncounter, hostile_units: List[str] = None, debuffs: List[str] = None) -> str:

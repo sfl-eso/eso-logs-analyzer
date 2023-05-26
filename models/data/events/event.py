@@ -31,7 +31,6 @@ class Event(Base):
         # Time of the event. Computed by
         self._time: datetime = None
 
-        # TODO: parent event
         # Previous event in order
         self._previous: Event = None
         # Next event in order

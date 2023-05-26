@@ -77,20 +77,6 @@ class UnitAdded(SpanCast):
         # Unit object of the owner if it exists
         self.owner_unit: UnitAdded = None
 
-        # # TODO: should the key here be begincombat?
-        # self.pets: Dict[BeginCombat, List[UnitAdded]] = defaultdict(list)
-        # self.combat_events_source: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
-        # self.combat_events_target: Dict[BeginCombat, List[TargetEvent]] = defaultdict(list)
-        # self.health_regen_events: Dict[BeginCombat, List[HealthRegen]] = defaultdict(list)
-
-    # def __str__(self):
-    #     return f"{self.__class__.__name__}(id={self.id}, unit_id={self.unit_id}, unit_type={self.unit_type}, " \
-    #            f"name={self.name}, account={self.account}, level={self.level}, champion_level={self.champion_level}, " \
-    #            f"hostility={self.hostility}, unit_changed={len(self.unit_changed)}, " \
-    #            f"unit_removed={self.unit_removed is not None})"
-    #
-    # __repr__ = __str__
-
     @property
     def end_event(self) -> Event:
         return self.unit_removed

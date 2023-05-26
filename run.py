@@ -59,6 +59,9 @@ def main(args: Namespace):
     # TODO: compute uptimes/infos about boss mechanics (hit/dodge/cleanse of ability)
     # TODO: replace ability and unit ids in str representation by name and ids
     # TODO: theoretical dps gain if we had full uptime
+    # TODO: sort abilities by role
+    # TODO: group abilities by role (separate tables)?
+    # TODO: auto collapse encounters and mark the boss hp % when we died (or cleared the encounter)
 
 
 if __name__ == "__main__":

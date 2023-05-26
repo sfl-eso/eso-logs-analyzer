@@ -30,6 +30,7 @@ class Locale(Enum):
 
 
 class TrialId(Enum):
+    ASYLUM_SANCTORIUM = "8"
     CLOUDREST = "9"
     ROCKGROVE = "15"
 
@@ -120,6 +121,7 @@ class CombatEventType(Enum):
     KNOCKBACK = "KNOCKBACK"
     NO_LOCATION_FOUND = "NO_LOCATION_FOUND"
     OFFBALANCE = "OFFBALANCE"
+    POWER_DRAIN = "POWER_DRAIN"
     POWER_ENERGIZE = "POWER_ENERGIZE"
     QUEUED = "QUEUED"
     REFLECTED = "REFLECTED"
@@ -144,6 +146,7 @@ class DamageType(Enum):
     INVALID = "INVALID"
     MAGIC = "MAGIC"
     NONE = "NONE"
+    OBLIVION = "OBLIVION"
     PHYSICAL = "PHYSICAL"
     POISON = "POISON"
     SHOCK = "SHOCK"

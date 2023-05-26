@@ -151,13 +151,17 @@ class EncounterLog(Base):
                     begin_events = sorted(begin_events, key=lambda e: e.duration)
                     completed_begin_event = begin_events[0]
                     cancelled_begin_event = begin_events[1]
-                    completed_end_event = [event for event in end_events if event.status == CastStatus.COMPLETED][0]
-                    cancelled_end_event = [event for event in end_events if event.status != CastStatus.COMPLETED][0]
-                    match_events(completed_begin_event, completed_end_event)
-                    match_events(cancelled_begin_event, cancelled_end_event)
+                    try:
+                        completed_end_event = [event for event in end_events if event.status == CastStatus.COMPLETED][0]
+                        cancelled_end_event = [event for event in end_events if event.status != CastStatus.COMPLETED][0]
+                        match_events(completed_begin_event, completed_end_event)
+                        match_events(cancelled_begin_event, cancelled_end_event)
+                    except IndexError as e:
+                        # TODO: these are only unique within a single trial instance
+                        self.logger.error(f"Error matching casts for effect cast id {cast_effect_id} and ability id {ability_id}: {e}")
 
                     if len(begin_events) > 2:
-                        self.logger.error(f"More than 2 events for mBmE effect cast id {cast_effect_id} and ability id {ability_id}")
+                        self.logger.error(f"More than 2 events for effect cast id {cast_effect_id} and ability id {ability_id}")
                 elif len(begin_events) == len(end_events):
                     # There are more than two different finished states for the end cast events.
                     end_cast_states = [event.status for event in end_events]

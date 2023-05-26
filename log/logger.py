@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from python_json_config import Config
 from python_json_config.config_node import ConfigNode
@@ -39,6 +38,19 @@ def init_loggers(config: Config):
         logging.root.handlers[0].setFormatter(__log_formatter())
 
 
+def __get_logger(name: str):
+    """
+    Creates a named logger that does not propagate its messages to the root logger and does not have
+    any handlers inherited from the root logger. This avoids log messages being printed to stdout twice,
+    in the wrong format or when the log level should not be printed.
+    See: https://stackoverflow.com/a/44426266
+    """
+    logger = logging.getLogger(name=name)
+    logger.propagate = False
+    logger.handlers.clear()
+    return logger
+
+
 def get_logger(name: str, console_level=None, file_level=None):
     global __LOG_CONFIG
     # logging.getLevelName maps from level to name and from name to level
@@ -46,11 +58,15 @@ def get_logger(name: str, console_level=None, file_level=None):
     console_level = console_level or logging.getLevelName(__LOG_CONFIG.console_level)
     file_level = file_level or logging.getLevelName(__LOG_CONFIG.file_level)
 
-    logger = logging.getLogger(name=name)
-    logger.setLevel(console_level)
+    logger = __get_logger(name=name)
+    logger.setLevel(min(console_level, file_level))
+    # logger.handlers.clear()
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(console_level)
+    stream_handler.setFormatter(__log_formatter())
+    logger.addHandler(stream_handler)
 
     # Also log to the log file with a different level
-    # TODO: log level for file handler does not work properly
     file_handler = logging.FileHandler(__LOG_CONFIG.file)
     file_handler.setLevel(file_level)
     file_handler.setFormatter(__log_formatter())
@@ -65,12 +81,8 @@ def get_event_logger(name: str, console_level=None):
     # Log level 0 indicates the log level is unset. In that we also set the level to the pre-defined one
     console_level = console_level or logging.getLevelName(__LOG_CONFIG.console_level)
 
-    logger = logging.getLogger(name=f"{name}.EventLogger")
-    # Disable this logger propagating its messages to its parent loggers (such as the root logger)
-    # Disabling this avoids printing each message twice (https://stackoverflow.com/a/44426266)
-    logger.propagate = False
-    logger.handlers.clear()
-    stream_handler = logging.StreamHandler(sys.stdout)
+    logger = __get_logger(name=f"{name}.EventLogger")
+    stream_handler = logging.StreamHandler()
     stream_handler.setLevel(console_level)
     stream_handler.setFormatter(EventFormatter())
     logger.addHandler(stream_handler)

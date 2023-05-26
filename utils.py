@@ -1,7 +1,10 @@
+import json
 import sys
 import csv
 from datetime import datetime
 from typing import Set
+
+_ability_map = None
 
 
 def read_csv(file_name: str,
@@ -40,3 +43,10 @@ def all_subclasses(cls):
         else:
             classes.extend(all_subclasses(subclass))
     return classes
+
+
+def ability_map():
+    global _ability_map
+    if _ability_map is None:
+        _ability_map = json.load(open("ability_map.json"))
+    return _ability_map

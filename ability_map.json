@@ -1,0 +1,52 @@
+{
+  "buffs": {
+    "94800": "Aggressive Warhorn",
+    "61747": "Major Force",
+    "61746": "Minor Force",
+    "85611": "Minor Force",
+
+    "147417": "Minor Courage",
+    "66902": "Major Courage",
+    "61771": "Powerful Assault",
+
+    "137986": "Major Slayer",
+
+    "61744": "Minor Berserk",
+    "61745": "Major Berserk",
+
+    "62800": "Minor Sorcery",
+    "62320": "Minor Prophecy",
+
+    "61737": "Empower",
+
+    "88490": "Minor Toughness",
+    "47362": "Ebon",
+    "47367": "Worm",
+
+    "110142": "Siroria's Boon"
+  },
+  "debuffs": {
+    "75753": "Alkosh (Line-Breaker)",
+    "17906": "Crusher",
+    "61742": "Minor Breach",
+    "61743": "Major Breach",
+
+    "61723": "Minor Maim",
+    "61725": "Major Maim",
+    "79717": "Minor Vulnerability",
+    "106754": "Major Vulnerability",
+    "39100": "Minor Magickasteal",
+    "88401": "Minor Magickasteal",
+    "145975": "Minor Brittle",
+
+    "31104": "Engulfing Flames",
+    "134336": "Stagger",
+
+    "34384": "Morag Tong",
+    "142610": "Flame Weakness",
+    "142652": "Frost Weakness",
+    "142653": "Shock Weakness",
+    "127070": "Way of Martial Knowledge",
+    "126579": "Touch of Z'en"
+  }
+}

@@ -48,7 +48,7 @@ class UnitChanged(Event):
         # If non-zero the unit id of the unit that owns this unit
         self.owner_unit_id = int(owner_unit_id)
         # If true, the unit is in a group with the recording player
-        self.is_grouped_with_local_player = is_grouped_with_local_player == "T"
+        self.is_grouped_with_local_player = self._convert_boolean(is_grouped_with_local_player, "is_grouped_with_local_player")
 
         # Corresponding event that added the unit this event affects
         self.unit_added: UnitAdded = None

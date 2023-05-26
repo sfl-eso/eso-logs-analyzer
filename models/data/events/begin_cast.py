@@ -62,7 +62,7 @@ class BeginCast(TargetEvent):
                                         target_heading_radians=target_heading_radians)
 
         self.duration = timedelta(milliseconds=int(duration_in_ms))
-        self.channeled = channeled == "T"
+        self.channeled = self._convert_boolean(channeled, field_name="channeled")
         self.cast_effect_id = int(cast_effect_id)
 
         self.cancelled_end_cast: EndCast = None

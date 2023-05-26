@@ -55,13 +55,13 @@ class UnitAdded(Event):
         self.hostility: Hostility = Hostility(hostility)
 
         # If true, this unit is the recording player
-        self.is_local_player = is_local_player == "T"
+        self.is_local_player = self._convert_boolean(is_local_player, "is_local_player")
         # Id of the player in the session
         self.player_per_session_id = int(player_per_session_id)
         # If this unit is a monster, its id
         self.monster_id = int(monster_id)
         # If true, this unit is a boss enemy
-        self.is_boss = is_boss == "T"
+        self.is_boss = self._convert_boolean(is_boss, "is_boss")
         # Class id of the unit
         self.class_id: ClassId = ClassId(class_id)
         # Race id of the unit
@@ -71,7 +71,7 @@ class UnitAdded(Event):
         # Unit id of the owner if this unit has an owner
         self.owner_unit_id = int(owner_unit_id)
         # True if this unit is grouped with the recording player
-        self.is_grouped_with_local_player = is_grouped_with_local_player == "T"
+        self.is_grouped_with_local_player = self._convert_boolean(is_grouped_with_local_player, "is_grouped_with_local_player")
 
         # All events of this unit changing
         self.unit_changed: List[UnitChanged] = []

@@ -21,7 +21,7 @@ class EndTrial(Event):
         # Time of the completion (i.e., how long it took)
         self.trial_duration = timedelta(milliseconds=int(trial_duration_ms))
         # If the trial was cleared successfully (can this ever be false?)
-        self.success = success == "T"
+        self.success = self._convert_boolean(success, field_name="success")
         # Final score
         self.final_score = int(final_score)
         # Vitality bonus to the score

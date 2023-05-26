@@ -22,15 +22,15 @@ class TrialInit(Event):
         super(TrialInit, self).__init__(id)
         self.trial_id: TrialId = TrialId(trial_id)
         # True if the trial is already in progress
-        self.in_progress = in_progress == "T"
+        self.in_progress = self._convert_boolean(in_progress, field_name="in_progress")
         # True if the trial was already completed
-        self.completed = completed == "T"
+        self.completed = self._convert_boolean(completed, field_name="completed")
         # Time when the trial was started
         self.start_time = timedelta(milliseconds=int(start_time_in_ms))
         # Duration of the trial
         self.duration = timedelta(milliseconds=int(duration_in_ms))
         # True, if the trial was successfully finished (can this ever be false when trial is complete?)
-        self.success = success == "T"
+        self.success = self._convert_boolean(success, field_name="success")
         # Final score of the trial
         self.final_score = int(final_score)
 

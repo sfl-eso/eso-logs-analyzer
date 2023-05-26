@@ -21,9 +21,9 @@ class AbilityInfo(Event):
         # Path to the icon file in the game files
         self.icon_path = icon_path
         # If true, the ability can be interrupted
-        self.interruptible = interruptible == "T"
+        self.interruptible = self._convert_boolean(interruptible, field_name="interruptible")
         # If true, the ability can be blocked
-        self.blockable = blockable == "T"
+        self.blockable = self._convert_boolean(blockable, field_name="blockable")
 
         # The EffectInfo object belonging to the same ability id
         self.effect_info: EffectInfo = None

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .enums import EffectType, StatusEffectType
+from .enums import EffectType, StatusEffectType, NoEffectBar
 from .event import Event
 
 if TYPE_CHECKING:
@@ -25,14 +25,11 @@ class EffectInfo(Event):
         self.ability_id = int(ability_id)
         # What kind of effect this is (i.e., buff, debuff)
         self.effect_type: EffectType = EffectType(effect_type)
-        # TODO: which values can this be
+        # The type of status effect if one is applied by this effect
         self.status_effect_type: StatusEffectType = StatusEffectType(status_effect_type)
-        # TODO: which values can this be
-        # TODO: is this still true with "T" "F" values?
-        # TODO: separate function to convert these values that throws an exception if the values changed (i.e., not T and not F)
-        self.no_effect_bar = no_effect_bar == "T"
+        # TODO: what does this mean?
+        self.no_effect_bar: NoEffectBar = NoEffectBar(no_effect_bar)
         # If set, this ability id is the synergy granted by this effect
-        # TODO: integrate into ability_info or get ability info object
         self.grants_synergy_ability_id = int(grants_synergy_ability_id) if grants_synergy_ability_id is not None else None
 
         # The AbilityInfo object belonging to the same ability id

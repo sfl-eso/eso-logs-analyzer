@@ -5,6 +5,7 @@
         "file_level": "DEBUG"
     },
     "export": {
+        "dir": "/mnt/d/projects/dragon-aegis-ad-logs",
         "file_suffix": "dragon_aegis"
     }
 }

@@ -1,3 +1,4 @@
 tqdm
 python-json-config
 mdutils
+colour

@@ -5,7 +5,7 @@ from typing import List, Dict
 from mdutils import MdUtils
 from python_json_config import Config
 
-from formatting import format_time
+from formatting import format_time, format_uptime
 from models.data import EncounterLog
 from models.data.events import UnitAdded
 from models.postprocessing import CombatEncounter
@@ -18,7 +18,7 @@ from utils import tqdm
 def generate_markdown_file(config: Config, encounter_log: EncounterLog, combat_encounters: List[CombatEncounter]):
     timestamp = encounter_log.begin_log.time.strftime("%Y_%m_%d_%H_%M_%S")
     # TODO: write to configured directory
-    file_name = f"output/{timestamp}_{config.export.file_suffix}.md"
+    file_name = f"{config.export.dir}/{timestamp}_{config.export.file_suffix}.md"
     # TODO: trial id and header
     md_file: MdUtils = MdUtils(file_name=file_name, title=f"Dragon Aegis - {encounter_log.begin_log.time.strftime('%Y-%m-%d %H:%M:%S')}")
     # TODO: players with metadata
@@ -83,8 +83,7 @@ def __create_encounter_debuff_table(md_file: MdUtils, encounter: CombatEncounter
                 target_uptimes_set = True
 
             relative_uptime = (uptime_in_s / target_time_in_s)
-            relative_uptime_str = "{:.2%}".format(relative_uptime)
-            ability_rows[ability.name].append(f"{relative_uptime_str} ({format_time(uptime_in_s)})")
+            ability_rows[ability.name].append(f"{format_uptime(relative_uptime)} ({format_time(uptime_in_s)})")
 
     table_rows = [header_row, target_uptimes]
     for ability_name, row_data in sorted(ability_rows.items()):

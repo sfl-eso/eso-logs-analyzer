@@ -107,8 +107,6 @@ def render_encounter(encounter: CombatEncounter, units: List[str] = None, abilit
         color = format_uptime(unit.was_killed)[1]
         target_active_times[unit.display_str] = Cell(value=active_time_str, color=color)
 
-    rows.append(target_active_times)
-
     for ability_name in abilities:
         row = {__NAME_KEY: Cell(ability_name)}
         for unit in units:
@@ -119,6 +117,6 @@ def render_encounter(encounter: CombatEncounter, units: List[str] = None, abilit
 
         rows.append(row)
 
-    debuff_table = render_template("table", {"title": "Debuff uptimes", "header_row": header_row, "rows": rows, "open": True})
+    debuff_table = render_template("table", {"title": "Debuff uptimes", "header_row": header_row, "active_row": target_active_times, "rows": rows, "open": True})
 
     return render_template("encounter", {"title": encounter_title, "debuff_table": debuff_table, "open": False})

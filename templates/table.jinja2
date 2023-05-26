@@ -1,36 +1,54 @@
 {# Input vars:
 title: header for the table
 header_row: list of strings that make up the header row
+active_row: list of dictionaries that describe the active time for each target
 rows: list of dictionaries pointing from column name to a cell object
 open: boolean if the table should start open or closed
 #}
-{% set details_state = "open" if open else "closed" %}
+{% set details_state = "open" if open else "" %}
 
 <details {{ details_state }}>
     <summary><h3>{{ title }}</h3></summary>
 
-    <table>
-        <thead>
-        <tr>
-            {%- for column_name in header_row -%}
-                <td>{{ column_name }}</td>
-            {%- endfor -%}
-        </tr>
-        </thead>
-
-        {% for row in rows %}
+    <div class="p-2">
+        <table class="table table-striped">
+            <thead class="table-light">
+            {# Actual header fields #}
             <tr>
-                {# Display row items in order of the header #}
-                {% for column_name in header_row %}
-                    {% set cell = row[column_name] %}
+                {%- for column_name in header_row -%}
+                    <th scope="col">{{ column_name }}</th>
+                {%- endfor -%}
+            </tr>
+            {# Fields describing the active time for each target #}
+            <tr>
+                {%- for column_name in header_row -%}
+                    {% set cell = active_row[column_name] %}
 
                     {% if cell.color is not none %}
-                        <td style="background-color:{{ cell.color.hex }};">{{ cell.value }}</td>
+                        <th scope="col" style="background-color:{{ cell.color.hex }};">{{ cell.value }}</th>
                     {% else %}
-                        <td>{{ cell.value }}</td>
+                        <th scope="col">{{ cell.value }}</th>
                     {% endif %}
-                {% endfor %}
+                {%- endfor -%}
             </tr>
-        {% endfor %}
-    </table>
+            </thead>
+
+            <tbody class="table-group-divider">
+            {% for row in rows %}
+                <tr>
+                    {# Display row items in order of the header #}
+                    {% for column_name in header_row %}
+                        {% set cell = row[column_name] %}
+
+                        {% if cell.color is not none %}
+                            <td style="background-color:{{ cell.color.hex }};">{{ cell.value }}</td>
+                        {% else %}
+                            <td>{{ cell.value }}</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </details>

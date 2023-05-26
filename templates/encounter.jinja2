@@ -3,7 +3,7 @@ title: header for the encounter
 debuff_table: raw html displaying the debuff table
 open: boolean if the encounter should start open or closed
 #}
-{% set details_state = "open" if open else "closed" %}
+{% set details_state = "open" if open else "" %}
 <details {{ details_state }}>
     <summary><h2>{{ title }}</h2></summary>
 

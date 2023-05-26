@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import timedelta
 from typing import TYPE_CHECKING, List, Dict
 
 from trials import get_boss_for_trial
 from utils import tqdm
-from .effect_uptime import EffectUptime
+from .unit import Unit
 from ..base import Base
 from ..data import EncounterLog, EventSpan
-from ..data.events import UnitAdded, EndCombat, BeginCombat, Event, CombatEvent, UnitChanged
+from ..data.events import UnitAdded, EndCombat, BeginCombat, Event, CombatEvent, UnitChanged, EffectChanged
 from ..data.events.enums import Hostility
 
 if TYPE_CHECKING:
@@ -30,7 +29,7 @@ class CombatEncounter(Base):
         # TODO: determine the last damage event to enemies
 
         self.hostile_units = self.load_hostile_units()
-        self.boss_units = [unit for unit in self.hostile_units if unit.is_boss]
+        self.boss_units = [unit for unit in self.hostile_units if unit.unit.is_boss]
         if self.begin.begin_trial is not None:
             self.trialId = self.begin.begin_trial.trial_id
 
@@ -48,7 +47,7 @@ class CombatEncounter(Base):
         if self.trialId is not None:
             return get_boss_for_trial(self.trialId, self.boss_units)
 
-    def load_hostile_units(self) -> List[UnitAdded]:
+    def load_hostile_units(self) -> List[Unit]:
         """
         Load every hostile unit that was damaged during this encounter. This filters any units that are only there for mechanics (such as HM mechanics)
         """
@@ -63,24 +62,19 @@ class CombatEncounter(Base):
             elif isinstance(event, CombatEvent) and event.target_unit is not None and event.target_unit.hostility == Hostility.HOSTILE:
                 active_units[event.target_unit] = True
 
-        return [unit for unit, was_damaged in active_units.items() if was_damaged]
+        return [Unit(self, unit) for unit, was_damaged in active_units.items() if was_damaged]
 
-    def debuff_uptimes(self, ability_names: List[str], only_boss: bool = True, unit_names: List[str] = None) -> Dict[UnitAdded, List[EffectUptime]]:
-        uptime_dict: Dict[UnitAdded, List[EffectUptime]] = defaultdict(list)
+    def compute_debuff_uptimes(self):
+        # Let every unit object process all events
+        for event in tqdm(self.event_span, desc="Computing debuff uptimes", position=1):
+            if not isinstance(event, EffectChanged):
+                continue
+            for unit in self.hostile_units:
+                unit.process_effect_changed_event(event)
 
-        if unit_names:
-            units = [unit for unit in self.hostile_units if unit.name in unit_names]
-        else:
-            units = self.boss_units if only_boss else self.hostile_units
-
-        for unit in units:
-            for ability_name in sorted(ability_names):
-                if ability_name not in self.encounter_log.valid_ability_names:
-                    self.logger.error(f"No ability with name '{ability_name}' found. Can't compute uptime!")
-                    continue
-                uptime_dict[unit].append(EffectUptime(self, unit, ability_name))
-
-        return dict(uptime_dict)
+        # Aggregate the spans in the unit objects
+        for unit in self.hostile_units:
+            unit.compute_debuff_uptimes()
 
     @classmethod
     def load(cls, encounter_log: EncounterLog) -> List[CombatEncounter]:

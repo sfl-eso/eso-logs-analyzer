@@ -32,6 +32,11 @@ class CombatEncounter(Base):
         self.boss_units = [unit for unit in self.hostile_units if unit.unit.is_boss]
         if self.begin.begin_trial is not None:
             self.trialId = self.begin.begin_trial.trial_id
+        else:
+            # TODO: if the encounterlog is stopped and restarted mid-trial this association is missing since there is no new begin trial event.
+            # TODO: instead there is another trialinit event. This association should use trialinit instead
+            self.logger.error(f"Event {begin} is not associated with a begin trial event!")
+            self.trialId = None
 
     def __str__(self):
         name = self.get_boss().value if self.is_boss_encounter else self.DEFAULT_NAME

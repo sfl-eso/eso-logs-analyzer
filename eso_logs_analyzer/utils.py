@@ -1,4 +1,5 @@
 import csv
+import platform
 import sys
 from datetime import datetime
 from typing import Set, Generator, Union
@@ -45,12 +46,26 @@ def get_num_lines(file_name: str) -> int:
         return sum(bl.count("\n") for bl in blocks(f))
 
 
+def __get_sys_max_size():
+    """
+    Returns the max size for the platform we are running on. For Linux systems its just sys.maxsize, but for Windows,
+    the number returned by sys.maxsize won't fit into a C long. Instead, return the max value that fits into a C long in that case.
+    @return: The max size for the current platform.
+    """
+    match platform.system().lower():
+        case "linux":
+            return sys.maxsize
+        case "windows":
+            # Bit shift by 31, since in C long is signed
+            return (1 << 31) - 1
+
+
 def read_csv(file_name: str,
              delimiter: str = ",",
              quotechar: str = '"',
              has_header: bool = True,
              columns_to_keep: Set[str] = None) -> Generator[Union[str, dict], None, None]:
-    csv.field_size_limit(sys.maxsize)
+    csv.field_size_limit(__get_sys_max_size())
     with open(file_name, 'r') as file:
         data = csv.reader(file, delimiter=delimiter, quotechar=quotechar)
         if has_header:

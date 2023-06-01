@@ -319,7 +319,6 @@ class EncounterLog(Base):
         events = []
         current_id = 0
         logs = []
-        previous_event = None
 
         current_log = EncounterLog(tqdm_index)
 

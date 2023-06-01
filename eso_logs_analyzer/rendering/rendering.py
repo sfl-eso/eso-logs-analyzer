@@ -130,7 +130,7 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
 
         # Use the trial of the first encounter for the log title
         if not log_trial_name:
-            log_trial_name = encounter.trialId.name.capitalize()
+            log_trial_name = encounter.trial_id.name.capitalize()
 
         # Compute debuff uptimes
         encounter.compute_debuff_uptimes()

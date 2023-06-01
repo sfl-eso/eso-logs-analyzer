@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import TYPE_CHECKING, List, Dict
+from typing import TYPE_CHECKING, List, Dict, Optional
 
 from .unit import Unit
 from ..base import Base
 from ..data import EncounterLog, EventSpan
 from ..data.events import UnitAdded, EndCombat, BeginCombat, Event, CombatEvent, UnitChanged, EffectChanged
-from ..data.events.enums import Hostility
+from ..data.events.enums import Hostility, TrialId
 from ...trials import get_boss_for_trial
 from ...utils import tqdm
 
@@ -24,19 +24,10 @@ class CombatEncounter(Base):
         self.end = end
         self.event_span = EventSpan(self.begin, self.end)
         self.encounter_log = encounter_log
-        # TODO: determine until when the encounter can go (at most up to the next begin combat)
         # TODO: split the events into buckets by a unit (e.g., a second) and determine dps to units during those buckets to determine the second until combat is going
-        # TODO: determine the last damage event to enemies
 
         self.hostile_units = self.load_hostile_units()
         self.boss_units = [unit for unit in self.hostile_units if unit.unit.is_boss]
-        if self.begin.trial_init is not None:
-            self.trialId = self.begin.trial_init.trial_id
-        else:
-            # TODO: if the encounterlog is stopped and restarted mid-trial this association is missing since there is no new begin trial event.
-            # TODO: instead there is another trialinit event. This association should use trialinit instead
-            self.logger.error(f"Event {begin} is not associated with a begin trial event!")
-            self.trialId = None
 
     def __str__(self):
         name = self.get_boss().value if self.is_boss_encounter else self.DEFAULT_NAME
@@ -44,15 +35,20 @@ class CombatEncounter(Base):
 
     __repr__ = __str__
 
-    # @property
-    
+    @property
+    def trial_id(self) -> Optional[TrialId]:
+        if self.begin.trial_init is not None:
+            return self.begin.trial_init.trial_id
+        else:
+            self.logger.warning(f"Combat encounter starting at {self.begin} is not associated with a trial!")
+
     @property
     def is_boss_encounter(self) -> bool:
         return len(self.boss_units) > 0
 
     def get_boss(self):
-        if self.trialId is not None:
-            return get_boss_for_trial(self.trialId, self.boss_units)
+        if self.trial_id is not None:
+            return get_boss_for_trial(self.trial_id, self.boss_units)
 
     def load_hostile_units(self) -> List[Unit]:
         """

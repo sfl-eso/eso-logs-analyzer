@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Union, List, Dict, Type, Set
 
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
-    TargetEvent
+    TargetEvent, TrialInit
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
 from ...utils import read_csv, get_num_lines, tqdm
@@ -240,24 +240,31 @@ class EncounterLog(Base):
         """
 
         begin_trial_cache: Dict[TrialId, BeginTrial] = {}
-        last_begin_trial: BeginTrial = None
+        # Trial init events are triggered even when entering already started trials (where we would miss the begin trial event).
+        # This event is needed for a combat encounter to know in which trial it happened.
+        last_trial_init: TrialInit = None
+
         for event in tqdm(self.events, desc="Matching trial events", position=self.__tqdm_index, leave=not self.__tqdm_index):
             if isinstance(event, BeginTrial):
                 if event.trial_id in begin_trial_cache:
                     self.logger.info(
                         f"Existing begin trial event at line {begin_trial_cache[event.trial_id].id + 1} for trial {event.trial_id} has no matching end trial event.")
                 begin_trial_cache[event.trial_id] = event
-                last_begin_trial = event
             elif isinstance(event, EndTrial):
-                last_begin_trial = None
+                last_trial_init = None
                 if event.trial_id in begin_trial_cache:
                     begin_event = begin_trial_cache[event.trial_id]
                     event.begin_trial = begin_event
                     begin_event.end_trial = event
                 else:
                     self.logger.warning(f"No matching begin trial event found for end trial event at line {event.id + 1} for trial {event.trial_id}.")
+            elif isinstance(event, TrialInit):
+                last_trial_init = event
             elif isinstance(event, BeginCombat):
-                event.begin_trial = last_begin_trial
+                if last_trial_init is None:
+                    self.logger.warning(f"Combat {event} happened outside of a trial context")
+                    continue
+                event.trial_init = last_trial_init
 
     def __match_unit_events(self):
         """

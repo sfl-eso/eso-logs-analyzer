@@ -30,8 +30,8 @@ class CombatEncounter(Base):
 
         self.hostile_units = self.load_hostile_units()
         self.boss_units = [unit for unit in self.hostile_units if unit.unit.is_boss]
-        if self.begin.begin_trial is not None:
-            self.trialId = self.begin.begin_trial.trial_id
+        if self.begin.trial_init is not None:
+            self.trialId = self.begin.trial_init.trial_id
         else:
             # TODO: if the encounterlog is stopped and restarted mid-trial this association is missing since there is no new begin trial event.
             # TODO: instead there is another trialinit event. This association should use trialinit instead
@@ -44,6 +44,8 @@ class CombatEncounter(Base):
 
     __repr__ = __str__
 
+    # @property
+    
     @property
     def is_boss_encounter(self) -> bool:
         return len(self.boss_units) > 0

@@ -13,7 +13,7 @@ class CombatEvent(TargetEvent):
     event_type: str = "COMBAT_EVENT"
 
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  type: str,
                  damage_type,
                  resource_type: str,
@@ -41,7 +41,7 @@ class CombatEvent(TargetEvent):
                  target_x_coord: str = None,
                  target_y_coord: str = None,
                  target_heading_radians: str = None):
-        super(CombatEvent, self).__init__(id=id,
+        super(CombatEvent, self).__init__(event_id=event_id,
                                           ability_id=ability_id,
                                           unit_id=unit_id,
                                           health=health,

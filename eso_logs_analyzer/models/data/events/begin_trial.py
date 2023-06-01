@@ -18,8 +18,8 @@ class BeginTrial(SpanCast):
 
     event_type: str = "BEGIN_TRIAL"
 
-    def __init__(self, id: int, trial_id: str, epoch_time: str):
-        super(BeginTrial, self).__init__(id)
+    def __init__(self, event_id: int, trial_id: str, epoch_time: str):
+        super(BeginTrial, self).__init__(event_id)
         # The timestamp when the trial started
         self.time = parse_epoch_time(epoch_time)
         # Id of the trial

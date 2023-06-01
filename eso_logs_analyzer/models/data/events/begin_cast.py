@@ -16,7 +16,7 @@ class BeginCast(TargetEvent, SpanCast):
     event_type: str = "BEGIN_CAST"
 
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  duration_in_ms: str,
                  channeled: str,
                  cast_effect_id: str,
@@ -41,7 +41,7 @@ class BeginCast(TargetEvent, SpanCast):
                  target_x_coord: str = None,
                  target_y_coord: str = None,
                  target_heading_radians: str = None):
-        super(BeginCast, self).__init__(id=id,
+        super(BeginCast, self).__init__(event_id=event_id,
                                         ability_id=ability_id,
                                         unit_id=unit_id,
                                         health=health,

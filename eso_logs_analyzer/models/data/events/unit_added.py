@@ -18,7 +18,7 @@ class UnitAdded(SpanCast):
     event_type: str = "UNIT_ADDED"
 
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  unit_id: str,
                  unit_type: str,
                  is_local_player: str,
@@ -35,7 +35,7 @@ class UnitAdded(SpanCast):
                  owner_unit_id: str,
                  hostility: str,
                  is_grouped_with_local_player: str):
-        super(UnitAdded, self).__init__(id)
+        super(UnitAdded, self).__init__(event_id)
         # If of the unit
         self.unit_id = int(unit_id)
         # What kind of unit this is (player, monster)

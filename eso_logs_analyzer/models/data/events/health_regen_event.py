@@ -12,7 +12,7 @@ class HealthRegen(Event):
     event_type: str = "HEALTH_REGEN"
 
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  effective_regen: str,
                  unit_id: str,
                  health: str,
@@ -24,7 +24,7 @@ class HealthRegen(Event):
                  x_coord: str,
                  y_coord: str,
                  z_coord: str):
-        super(HealthRegen, self).__init__(id)
+        super(HealthRegen, self).__init__(event_id)
         self.unit_id = int(unit_id)
         self.effective_regen = int(effective_regen)
         # These values occur in the form '42384/42384'

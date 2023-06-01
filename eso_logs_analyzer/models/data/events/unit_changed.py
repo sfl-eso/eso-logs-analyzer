@@ -13,7 +13,7 @@ class UnitChanged(Event):
     event_type: str = "UNIT_CHANGED"
 
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  unit_id: str,
                  class_id: str,
                  race_id: str,
@@ -25,7 +25,7 @@ class UnitChanged(Event):
                  owner_unit_id: str,
                  hostility: str,
                  is_grouped_with_local_player: str):
-        super(UnitChanged, self).__init__(id)
+        super(UnitChanged, self).__init__(event_id)
         # Id of the unit
         self.unit_id = int(unit_id)
         # Name of the unit

@@ -14,13 +14,13 @@ class EffectInfo(Event):
     event_type: str = "EFFECT_INFO"
 
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  ability_id: str,
                  effect_type: str,
                  status_effect_type: str,
                  no_effect_bar: str,
                  grants_synergy_ability_id: str = None):
-        super(EffectInfo, self).__init__(id)
+        super(EffectInfo, self).__init__(event_id)
         # Id of the ability (same as ingame)
         self.ability_id = int(ability_id)
         # What kind of effect this is (i.e., buff, debuff)

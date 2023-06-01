@@ -20,11 +20,11 @@ class Event(Base):
     event_type: str = None
     subclass_for_event_type: Dict[str, Type[Event]] = None
 
-    def __init__(self, id: int, *args):
+    def __init__(self, event_id: int, *args):
         super().__init__()
 
         # Consecutive id of the event. Is a millisecond offset to the timestamp of the BEGIN_LOG event.
-        self.id = id
+        self.event_id = event_id
         # Contains data fields that have not been parsed into named fields
         self.data = args
 
@@ -138,7 +138,7 @@ class Event(Base):
         Set the epoch time for each event by computing the diff to the begin log event.
         """
         if self.time is None:
-            self.time = encounter_log.begin_log.compute_offset_event_time(self.id)
+            self.time = encounter_log.begin_log.compute_offset_event_time(self.event_id)
         else:
             self.logger.debug(f"Computing time for event {self} when it is already set")
 
@@ -152,7 +152,7 @@ class Event(Base):
         """
         Computes the time for the given event id using the millisecond offset encoded in the event ids.
         """
-        return self.time + timedelta(milliseconds=(event_id - self.id))
+        return self.time + timedelta(milliseconds=(event_id - self.event_id))
 
     def _convert_boolean(self, value: str, field_name: str = None) -> bool:
         """

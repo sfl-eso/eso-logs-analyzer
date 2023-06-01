@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 class BeginLog(SpanCast):
     event_type: str = "BEGIN_LOG"
 
-    def __init__(self, id: int, epoch_time: str, log_version: str, server: str, locale: str, client_version: str):
-        super(BeginLog, self).__init__(id)
+    def __init__(self, event_id: int, epoch_time: str, log_version: str, server: str, locale: str, client_version: str):
+        super(BeginLog, self).__init__(event_id)
         # The time at which the log starts
         self.time = parse_epoch_time(epoch_time)
         # The server on which the log was created. Can be

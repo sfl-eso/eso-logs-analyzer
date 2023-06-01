@@ -6,7 +6,7 @@ class EffectChanged(TargetEvent):
     event_type: str = "EFFECT_CHANGED"
 
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  status: str,
                  stack_count: str,
                  cast_effect_id: str,
@@ -32,7 +32,7 @@ class EffectChanged(TargetEvent):
                  target_y_coord: str = None,
                  target_heading_radians: str = None,
                  player_initiated_remove_cast_track_id: str = None):
-        super(EffectChanged, self).__init__(id=id,
+        super(EffectChanged, self).__init__(event_id=event_id,
                                             ability_id=ability_id,
                                             unit_id=unit_id,
                                             health=health,

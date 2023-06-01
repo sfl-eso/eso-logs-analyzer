@@ -11,6 +11,6 @@ if TYPE_CHECKING:
 class EndCombat(Event):
     event_type: str = "END_COMBAT"
 
-    def __init__(self, id: int):
-        super(EndCombat, self).__init__(id)
+    def __init__(self, event_id: int):
+        super(EndCombat, self).__init__(event_id)
         self.begin_combat: BeginCombat = None

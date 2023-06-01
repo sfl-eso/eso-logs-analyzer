@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 class EndCast(Event):
     event_type: str = "END_CAST"
 
-    def __init__(self, id: int, status: str, cast_effect_id, ability_id, interrupting_ability_id: str = None,
+    def __init__(self, event_id: int, status: str, cast_effect_id, ability_id, interrupting_ability_id: str = None,
                  interrupting_unit_id: str = None):
-        super(EndCast, self).__init__(id)
+        super(EndCast, self).__init__(event_id)
         self.ability_id = int(ability_id)
         self.status: CastStatus = CastStatus(status)
         # Unique id identifying this cast event.

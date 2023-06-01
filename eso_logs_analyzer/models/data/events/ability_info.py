@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 class AbilityInfo(Event):
     event_type: str = "ABILITY_INFO"
 
-    def __init__(self, id: int, ability_id: str, name: str, icon_path: str, interruptible: str, blockable: str):
-        super(AbilityInfo, self).__init__(id)
+    def __init__(self, event_id: int, ability_id: str, name: str, icon_path: str, interruptible: str, blockable: str):
+        super(AbilityInfo, self).__init__(event_id)
         # Id of the ability (same as ingame)
         self.ability_id = int(ability_id)
         # Name of the ability (i.e., Major Prophecy)

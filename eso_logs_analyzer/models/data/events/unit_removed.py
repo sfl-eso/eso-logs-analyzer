@@ -11,8 +11,8 @@ if TYPE_CHECKING:
 class UnitRemoved(Event):
     event_type: str = "UNIT_REMOVED"
 
-    def __init__(self, id: int, unit_id: str):
-        super(UnitRemoved, self).__init__(id)
+    def __init__(self, event_id: int, unit_id: str):
+        super(UnitRemoved, self).__init__(event_id)
         # Id of the unit that was removed
         self.unit_id = int(unit_id)
 

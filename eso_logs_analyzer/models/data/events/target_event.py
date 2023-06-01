@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class TargetEvent(Event):
     def __init__(self,
-                 id: int,
+                 event_id: int,
                  ability_id: str,
                  unit_id: str,
                  health: str,
@@ -34,7 +34,7 @@ class TargetEvent(Event):
                  target_x_coord: str = None,
                  target_y_coord: str = None,
                  target_heading_radians: str = None):
-        super(TargetEvent, self).__init__(id)
+        super(TargetEvent, self).__init__(event_id)
 
         # Source information
         self.unit_id = int(unit_id)

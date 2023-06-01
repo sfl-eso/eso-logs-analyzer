@@ -4,13 +4,11 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Union, List, Dict, Type, Set
 
-from tqdm import tqdm
-
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
     TargetEvent
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
-from ...utils import read_csv, get_num_lines
+from ...utils import read_csv, get_num_lines, tqdm
 
 
 class EncounterLog(Base):
@@ -34,8 +32,9 @@ class EncounterLog(Base):
         self.effect_infos: Dict[int, EffectInfo] = None
         self.player_unit_added: Dict[int, UnitAdded] = None
 
-    def initialize(self, events: List[Event]):
-        self.events = events
+    def initialize(self):
+        if self.events is None:
+            return RuntimeError(f"Can't initialize log with unset events array")
 
         # Sort the events by their type
         event_dict = defaultdict(list)
@@ -323,21 +322,16 @@ class EncounterLog(Base):
             # Convert the line into an event object
             try:
                 event = Event.create(current_id, current_log, int(line[0]), line[1], *line[2:])
+                events.append(event)
             except ValueError as e:
                 cls.logger.error(f"Could not create Event of type {line[1]} at line {current_id + 1}! {e}")
                 continue
             finally:
                 current_id += 1
 
-            # Connect the event linked list pointers
-            # if previous_event is not None:
-            #     event.previous = previous_event
-            events.append(event)
-            # previous_event = event
-
             # Separate logs into different objects if there are multiple logs in the file
             if isinstance(event, EndLog):
-                current_log.initialize(events)
+                current_log.events = events
                 logs.append(current_log)
                 if multiple:
                     # We have a separate log starting after this line
@@ -346,5 +340,10 @@ class EncounterLog(Base):
                     current_log = EncounterLog(tqdm_index)
                 else:
                     break
+
+        # Initialize log by processing all the events in the log.
+        # If this step is skipped, the log object contains no useful data.
+        for log in logs:
+            log.initialize()
 
         return logs if multiple else logs[0]

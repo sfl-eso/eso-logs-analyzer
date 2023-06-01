@@ -6,12 +6,15 @@ from .event import Event
 
 if TYPE_CHECKING:
     from .unit_added import UnitAdded
+    from ..encounter_log import EncounterLog
 
 
 class HealthRegen(Event):
     event_type: str = "HEALTH_REGEN"
 
     def __init__(self,
+                 id: int,
+                 encounter_log: EncounterLog,
                  event_id: int,
                  effective_regen: str,
                  unit_id: str,
@@ -24,7 +27,7 @@ class HealthRegen(Event):
                  x_coord: str,
                  y_coord: str,
                  z_coord: str):
-        super(HealthRegen, self).__init__(event_id)
+        super(HealthRegen, self).__init__(id, encounter_log, event_id)
         self.unit_id = int(unit_id)
         self.effective_regen = int(effective_regen)
         # These values occur in the form '42384/42384'

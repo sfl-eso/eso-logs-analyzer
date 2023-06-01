@@ -15,20 +15,31 @@ from ...utils import read_csv, get_num_lines
 
 class EncounterLog(Base):
 
-    def __init__(self, events: List[Event], tqdm_index: int):
+    def __init__(self, tqdm_index: int, *args, **kwargs):
         """
-        Creates an encounter log object.
-        @param events: List of events that occurred between the begin and end log event of this log.
+        Creates an encounter log object. Most instance variables are only declared, but not initialized with a value, since this object needs to be
+        created and passed to each event that is part of it. The data will be filled at a later point.
         @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
-        self._events = events
         self.__tqdm_index = tqdm_index
+
+        self.events: List[Event] = None
+        self._event_dict: Dict[str, List[Event]] = None
+        self.begin_log: BeginLog = None
+        self.end_log: EndLog = None
+        self.ability_infos: Dict[int, AbilityInfo] = None
+        self.valid_ability_names = None
+        self.effect_infos: Dict[int, EffectInfo] = None
+        self.player_unit_added: Dict[int, UnitAdded] = None
+
+    def initialize(self, events: List[Event]):
+        self.events = events
 
         # Sort the events by their type
         event_dict = defaultdict(list)
-        for event in events:
+        for event in self.events:
             event_dict[event.event_type].append(event)
         # Create a dictionary that throws errors if non-existing keys are read
         self._event_dict = dict(event_dict)
@@ -46,7 +57,7 @@ class EncounterLog(Base):
         self.player_unit_added: Dict[int, UnitAdded] = {unit.unit_id: unit for unit in self._event_dict[UnitAdded.event_type]
                                                         if unit.unit_type == UnitType.PLAYER}
 
-        for event in tqdm(self._events, "Resolving event references", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        for event in tqdm(self.events, "Resolving event references", position=self.__tqdm_index, leave=not self.__tqdm_index):
             event.compute_event_time(self)
             event.resolve_ability_and_effect_info_references(self)
 
@@ -202,7 +213,7 @@ class EncounterLog(Base):
         Match begin combat encounters to their end events. Since combat happens sequentially these events should always happen sequentially as well.
         """
         current_encounter: BeginCombat = None
-        for event in tqdm(self._events, desc="Matching combat events", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        for event in tqdm(self.events, desc="Matching combat events", position=self.__tqdm_index, leave=not self.__tqdm_index):
             if isinstance(event, BeginCombat):
                 if current_encounter is not None:
                     self.logger.error(f"Entering combat event {event} while already in combat event {current_encounter}")
@@ -232,11 +243,11 @@ class EncounterLog(Base):
 
         begin_trial_cache: Dict[TrialId, BeginTrial] = {}
         last_begin_trial: BeginTrial = None
-        for event in tqdm(self._events, desc="Matching trial events", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        for event in tqdm(self.events, desc="Matching trial events", position=self.__tqdm_index, leave=not self.__tqdm_index):
             if isinstance(event, BeginTrial):
                 if event.trial_id in begin_trial_cache:
                     self.logger.info(
-                        f"Existing begin trial event at line {begin_trial_cache[event.trial_id].order_id + 1} for trial {event.trial_id} has no matching end trial event.")
+                        f"Existing begin trial event at line {begin_trial_cache[event.trial_id].id + 1} for trial {event.trial_id} has no matching end trial event.")
                 begin_trial_cache[event.trial_id] = event
                 last_begin_trial = event
             elif isinstance(event, EndTrial):
@@ -246,7 +257,7 @@ class EncounterLog(Base):
                     event.begin_trial = begin_event
                     begin_event.end_trial = event
                 else:
-                    self.logger.warning(f"No matching begin trial event found for end trial event at line {event.order_id + 1} for trial {event.trial_id}.")
+                    self.logger.warning(f"No matching begin trial event found for end trial event at line {event.id + 1} for trial {event.trial_id}.")
             elif isinstance(event, BeginCombat):
                 event.begin_trial = last_begin_trial
 
@@ -257,10 +268,10 @@ class EncounterLog(Base):
         """
         added_units = {}
         # Note: no need to use tqdm to monitor progress here, since this does not require a lot of time.
-        for event in self._events:
+        for event in self.events:
             if isinstance(event, UnitAdded):
                 if event.unit_id in added_units:
-                    self.logger.error(f"Duplicate unit added event with id {event.id}")
+                    self.logger.error(f"Duplicate unit added event with id {event.event_id}")
                 else:
                     added_units[event.unit_id] = event
             elif isinstance(event, UnitRemoved):
@@ -284,10 +295,6 @@ class EncounterLog(Base):
                 elif event.target_unit_id:
                     self.logger.error(f"No unit found for event {event} with target unit id {event.target_unit_id}")
 
-    @property
-    def events(self):
-        return self._events
-
     def events_for_type(self, event_type: Type[Event]):
         return self._event_dict[event_type.event_type]
 
@@ -305,39 +312,39 @@ class EncounterLog(Base):
         num_lines = get_num_lines(file)
         csv_file = read_csv(str(path), has_header=False)
         events = []
-        count = 0
+        current_id = 0
         logs = []
         previous_event = None
+
+        current_log = EncounterLog(tqdm_index)
 
         for line in tqdm(csv_file, desc=f"Parsing log {path}", total=num_lines, position=tqdm_index, leave=not tqdm_index):
 
             # Convert the line into an event object
             try:
-                event = Event.create(count, int(line[0]), line[1], *line[2:])
+                event = Event.create(current_id, current_log, int(line[0]), line[1], *line[2:])
             except ValueError as e:
-                cls.logger.error(f"Could not create Event of type {line[1]} at line {count + 1}! {e}")
+                cls.logger.error(f"Could not create Event of type {line[1]} at line {current_id + 1}! {e}")
                 continue
             finally:
-                count += 1
+                current_id += 1
 
             # Connect the event linked list pointers
-            if previous_event is not None:
-                event.previous = previous_event
+            # if previous_event is not None:
+            #     event.previous = previous_event
             events.append(event)
-            previous_event = event
-            # Increase the line number count for debugging purposes
+            # previous_event = event
 
             # Separate logs into different objects if there are multiple logs in the file
             if isinstance(event, EndLog):
-                logs.append(events)
+                current_log.initialize(events)
+                logs.append(current_log)
                 if multiple:
                     # We have a separate log starting after this line
                     events = []
-                    count = 0
-                    previous_event = None
+                    current_id = 0
+                    current_log = EncounterLog(tqdm_index)
                 else:
                     break
 
-        # Convert the events into EncounterLog objects
-        logs = [cls(events, tqdm_index) for events in logs]
         return logs if multiple else logs[0]

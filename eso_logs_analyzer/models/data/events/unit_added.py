@@ -9,6 +9,7 @@ from .span_event import SpanCast
 if TYPE_CHECKING:
     from .unit_changed import UnitChanged
     from .unit_removed import UnitRemoved
+    from ..encounter_log import EncounterLog
 
 
 class UnitAdded(SpanCast):
@@ -18,6 +19,8 @@ class UnitAdded(SpanCast):
     event_type: str = "UNIT_ADDED"
 
     def __init__(self,
+                 id: int,
+                 encounter_log: EncounterLog,
                  event_id: int,
                  unit_id: str,
                  unit_type: str,
@@ -35,7 +38,7 @@ class UnitAdded(SpanCast):
                  owner_unit_id: str,
                  hostility: str,
                  is_grouped_with_local_player: str):
-        super(UnitAdded, self).__init__(event_id)
+        super(UnitAdded, self).__init__(id, encounter_log, event_id)
         # If of the unit
         self.unit_id = int(unit_id)
         # What kind of unit this is (player, monster)

@@ -13,11 +13,11 @@ if TYPE_CHECKING:
 class PlayerInfo(Event):
     event_type: str = "PLAYER_INFO"
 
-    def __init__(self, event_id: int, unit_id: str, *args):
+    def __init__(self, id: int, encounter_log: EncounterLog, event_id: int, unit_id: str, *args):
         """
         :param args: Information about the player split badly by the csv parser
         """
-        super(PlayerInfo, self).__init__(event_id)
+        super(PlayerInfo, self).__init__(id, encounter_log, event_id)
         self.unit_id = int(unit_id)
         parsed_data = self._parse_info(",".join(args))
         # Long term effect ability ids

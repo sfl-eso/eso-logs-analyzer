@@ -9,13 +9,14 @@ from ....utils import parse_epoch_time
 
 if TYPE_CHECKING:
     from .end_log import EndLog
+    from ..encounter_log import EncounterLog
 
 
 class BeginLog(SpanCast):
     event_type: str = "BEGIN_LOG"
 
-    def __init__(self, event_id: int, epoch_time: str, log_version: str, server: str, locale: str, client_version: str):
-        super(BeginLog, self).__init__(event_id)
+    def __init__(self, id: int, encounter_log: EncounterLog, event_id: int, epoch_time: str, log_version: str, server: str, locale: str, client_version: str):
+        super(BeginLog, self).__init__(id, encounter_log, event_id)
         # The time at which the log starts
         self.time = parse_epoch_time(epoch_time)
         # The server on which the log was created. Can be
@@ -29,10 +30,6 @@ class BeginLog(SpanCast):
 
         # The event that finishes this log
         self.end_log: EndLog = None
-
-    # TODO: unified event time method in Event using "parent" events
-    # def event_time(self, event_id: int) -> datetime:
-    #     return self.time + timedelta(milliseconds=(event_id - self.id))
 
     @property
     def end_event(self) -> Event:

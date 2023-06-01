@@ -1,11 +1,20 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .enums import EffectChangedStatus
 from .target_event import TargetEvent
+
+if TYPE_CHECKING:
+    from ..encounter_log import EncounterLog
 
 
 class EffectChanged(TargetEvent):
     event_type: str = "EFFECT_CHANGED"
 
     def __init__(self,
+                 id: int,
+                 encounter_log: EncounterLog,
                  event_id: int,
                  status: str,
                  stack_count: str,
@@ -32,7 +41,9 @@ class EffectChanged(TargetEvent):
                  target_y_coord: str = None,
                  target_heading_radians: str = None,
                  player_initiated_remove_cast_track_id: str = None):
-        super(EffectChanged, self).__init__(event_id=event_id,
+        super(EffectChanged, self).__init__(id=id,
+                                            encounter_log=encounter_log,
+                                            event_id=event_id,
                                             ability_id=ability_id,
                                             unit_id=unit_id,
                                             health=health,

@@ -17,9 +17,18 @@ class TrialInit(Event):
 
     event_type: str = "TRIAL_INIT"
 
-    def __init__(self, event_id: int, trial_id: str, in_progress: str, completed: str, start_time_in_ms: str, duration_in_ms,
-                 success: str, final_score: str):
-        super(TrialInit, self).__init__(event_id)
+    def __init__(self,
+                 id: int,
+                 encounter_log: EncounterLog,
+                 event_id: int,
+                 trial_id: str,
+                 in_progress: str,
+                 completed: str,
+                 start_time_in_ms: str,
+                 duration_in_ms,
+                 success: str,
+                 final_score: str):
+        super(TrialInit, self).__init__(id, encounter_log, event_id)
         self.trial_id: TrialId = TrialId(trial_id)
         # True if the trial is already in progress
         self.in_progress = self._convert_boolean(in_progress, field_name="in_progress")

@@ -36,13 +36,13 @@ class EventSpan(Base):
     def __eq__(self, other):
         if not isinstance(other, EventSpan):
             return False
-        return self.start.order_id == other.start.order_id and self.end.order_id == other.end.order_id
+        return self.start.id == other.start.id and self.end.id == other.end.id
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self.start.order_id, self.end.order_id))
+        return hash((self.start.id, self.end.id))
 
     def __contains__(self, item):
         if isinstance(item, Event):
@@ -53,7 +53,7 @@ class EventSpan(Base):
             raise NotImplementedError
 
     def __len__(self):
-        return self.end.order_id - self.start.order_id
+        return self.end.id - self.start.id
 
     def __bool__(self):
         """
@@ -62,8 +62,8 @@ class EventSpan(Base):
         return True
 
     def overlaps(self, other: EventSpan) -> bool:
-        return (other.start.order_id <= self.start.order_id <= other.end.order_id) \
-            or (other.start.order_id <= self.end.order_id <= other.end.order_id)
+        return (other.start.id <= self.start.id <= other.end.id) \
+            or (other.start.id <= self.end.id <= other.end.id)
 
     @property
     def duration(self) -> timedelta:

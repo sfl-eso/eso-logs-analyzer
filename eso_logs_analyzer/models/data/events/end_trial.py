@@ -8,14 +8,15 @@ from .event import Event
 
 if TYPE_CHECKING:
     from .begin_trial import BeginTrial
+    from ..encounter_log import EncounterLog
 
 
 class EndTrial(Event):
     event_type: str = "END_TRIAL"
 
-    def __init__(self, event_id: int, trial_id: str, trial_duration_ms: str, success: str, final_score: str,
+    def __init__(self, id: int, encounter_log: EncounterLog, event_id: int, trial_id: str, trial_duration_ms: str, success: str, final_score: str,
                  final_vitality_bonus: str):
-        super(EndTrial, self).__init__(event_id)
+        super(EndTrial, self).__init__(id, encounter_log, event_id)
         # Id of the trial
         self.trial_id: TrialId = TrialId(trial_id)
         # Time of the completion (i.e., how long it took)

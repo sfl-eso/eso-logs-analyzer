@@ -8,13 +8,14 @@ from .span_event import SpanCast
 if TYPE_CHECKING:
     from .end_combat import EndCombat
     from .begin_trial import BeginTrial
+    from ..encounter_log import EncounterLog
 
 
 class BeginCombat(SpanCast):
     event_type: str = "BEGIN_COMBAT"
 
-    def __init__(self, event_id: int):
-        super(BeginCombat, self).__init__(event_id)
+    def __init__(self, id: int, encounter_log: EncounterLog, event_id: int):
+        super(BeginCombat, self).__init__(id, encounter_log, event_id)
         # The corresponding end combat event
         self.end_combat: EndCombat = None
         self.begin_trial: BeginTrial = None

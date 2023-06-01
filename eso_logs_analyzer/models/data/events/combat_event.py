@@ -6,13 +6,15 @@ from .enums import CombatEventType, ResourceType, DamageType
 from .target_event import TargetEvent
 
 if TYPE_CHECKING:
-    pass
+    from ..encounter_log import EncounterLog
 
 
 class CombatEvent(TargetEvent):
     event_type: str = "COMBAT_EVENT"
 
     def __init__(self,
+                 id: int,
+                 encounter_log: EncounterLog,
                  event_id: int,
                  type: str,
                  damage_type,
@@ -41,7 +43,9 @@ class CombatEvent(TargetEvent):
                  target_x_coord: str = None,
                  target_y_coord: str = None,
                  target_heading_radians: str = None):
-        super(CombatEvent, self).__init__(event_id=event_id,
+        super(CombatEvent, self).__init__(id=id,
+                                          encounter_log=encounter_log,
+                                          event_id=event_id,
                                           ability_id=ability_id,
                                           unit_id=unit_id,
                                           health=health,

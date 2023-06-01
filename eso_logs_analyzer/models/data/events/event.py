@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Type, Dict, TYPE_CHECKING, Tuple
 
+from .abstract_event import AbstractEvent
 from .enums import BooleanType
 from ...base import Base
 from ....utils import all_subclasses
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
     from ..event_span import EventSpan
 
 
-class Event(Base):
+class Event(Base, AbstractEvent):
     """
     Base event class for all the different log events.
     Details for the parameters can be found on: https://esoapi.uesp.net/current/src/ingame/slashcommands/slashcommands_shared.lua.html
@@ -20,23 +21,21 @@ class Event(Base):
     event_type: str = None
     subclass_for_event_type: Dict[str, Type[Event]] = None
 
-    def __init__(self, event_id: int, *args):
-        super().__init__()
+    def __init__(self, id: int, encounter_log: EncounterLog, event_id: int, *args):
+        super().__init__(id=id, encounter_log=encounter_log)
 
         # Consecutive id of the event. Is a millisecond offset to the timestamp of the BEGIN_LOG event.
         self.event_id = event_id
         # Contains data fields that have not been parsed into named fields
         self.data = args
 
-        # Time of the event. Computed by
+        # Time of the event. Computed using the event id and the timestamp in the begin log event.
         self._time: datetime = None
 
         # Previous event in order
         self._previous: Event = None
         # Next event in order
         self._next: Event = None
-        # Line number in the source log file
-        self.order_id = None
 
     @property
     def time(self):
@@ -57,18 +56,17 @@ class Event(Base):
     def __eq__(self, other):
         if not isinstance(other, Event):
             return False
-        return self.order_id == other.order_id
+        return self.id == other.id
 
     def __hash__(self):
-        return hash(self.order_id)
+        return hash(self.id)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __lt__(self, other):
-        if not isinstance(other, Event):
-            raise NotImplementedError
-        return self.order_id < other.order_id
+        assert isinstance(other, Event), f"Can't compare {self} with non-event object {other}"
+        return self.id < other.id
 
     def __le__(self, other):
         return self.__eq__(other) or self.__lt__(other)
@@ -80,7 +78,7 @@ class Event(Base):
         return not self.__lt__(other)
 
     @classmethod
-    def create(cls, order_id: int, id: int, event_type: str, *args):
+    def create(cls, id: int, encounter_log: EncounterLog, event_id: int, event_type: str, *args):
         if cls.subclass_for_event_type is None:
             cls.subclass_for_event_type = {subclass.event_type: subclass for subclass in all_subclasses(cls)}
 
@@ -90,8 +88,7 @@ class Event(Base):
             raise ValueError(f"No event class found for {event_type}")
 
         subclass = cls.subclass_for_event_type[event_type]
-        instance = subclass(id, *args)
-        instance.order_id = order_id
+        instance = subclass(id, encounter_log, event_id, *args)
 
         # Hacky way to change the class of soul gem resurrection events, since they have a non-existing ability id
         if isinstance(instance, CombatEvent) and instance.ability_id == "0":
@@ -101,25 +98,25 @@ class Event(Base):
 
     @classmethod
     def sort_key(cls, event: Event):
-        return event.order_id
+        return event.id
 
-    @property
-    def next(self):
-        return self._next
-
-    @next.setter
-    def next(self, value: Event):
-        self._next = value
-        value._previous = self
-
-    @property
-    def previous(self):
-        return self._previous
-
-    @previous.setter
-    def previous(self, value: Event):
-        self._previous = value
-        value._next = self
+    # @property
+    # def next(self):
+    #     return self._next
+    #
+    # @next.setter
+    # def next(self, value: Event):
+    #     self._next = value
+    #     value._previous = self
+    #
+    # @property
+    # def previous(self):
+    #     return self._previous
+    #
+    # @previous.setter
+    # def previous(self, value: Event):
+    #     self._previous = value
+    #     value._next = self
 
     def span(self, other: Event) -> EventSpan:
         from ..event_span import EventSpan

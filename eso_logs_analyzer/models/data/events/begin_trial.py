@@ -9,6 +9,7 @@ from ....utils import parse_epoch_time
 
 if TYPE_CHECKING:
     from .end_trial import EndTrial
+    from ..encounter_log import EncounterLog
 
 
 class BeginTrial(SpanCast):
@@ -18,8 +19,8 @@ class BeginTrial(SpanCast):
 
     event_type: str = "BEGIN_TRIAL"
 
-    def __init__(self, event_id: int, trial_id: str, epoch_time: str):
-        super(BeginTrial, self).__init__(event_id)
+    def __init__(self, id: int, encounter_log: EncounterLog, event_id: int, trial_id: str, epoch_time: str):
+        super(BeginTrial, self).__init__(id, encounter_log, event_id)
         # The timestamp when the trial started
         self.time = parse_epoch_time(epoch_time)
         # Id of the trial

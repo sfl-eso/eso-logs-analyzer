@@ -7,12 +7,15 @@ from .event import Event
 
 if TYPE_CHECKING:
     from .unit_added import UnitAdded
+    from ..encounter_log import EncounterLog
 
 
 class UnitChanged(Event):
     event_type: str = "UNIT_CHANGED"
 
     def __init__(self,
+                 id: int,
+                 encounter_log: EncounterLog,
                  event_id: int,
                  unit_id: str,
                  class_id: str,
@@ -25,7 +28,7 @@ class UnitChanged(Event):
                  owner_unit_id: str,
                  hostility: str,
                  is_grouped_with_local_player: str):
-        super(UnitChanged, self).__init__(event_id)
+        super(UnitChanged, self).__init__(id, encounter_log, event_id)
         # Id of the unit
         self.unit_id = int(unit_id)
         # Name of the unit

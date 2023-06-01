@@ -57,14 +57,20 @@ class EncounterLog(Base):
         self.player_unit_added: Dict[int, UnitAdded] = {unit.unit_id: unit for unit in self._event_dict[UnitAdded.event_type]
                                                         if unit.unit_type == UnitType.PLAYER}
 
-        for event in tqdm(self.events, "Computing event times", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        self.logger.info("Computing event times")
+        for event in self.events:
             event.compute_event_time(self)
 
         # Match the span events with their end-counterparts and set the begin and end event fields.
+        self.logger.info("Matching cast events")
         self.__match_cast_events()
+        self.logger.info("Matching combat events")
         self.__match_combat_events()
+        self.logger.info("Matching log events")
         self.__match_log_events()
+        self.logger.info("Matching trial events")
         self.__match_trial_events()
+        self.logger.info("Matching unit events")
         self.__match_unit_events()
 
     def __str__(self):
@@ -104,7 +110,7 @@ class EncounterLog(Base):
         # Contains end cast events for which there is no begin cast event with the same cast effect id and ability id
         missing_ability_id_begin_casts: Dict[int, List[EndCast]] = defaultdict(list)
 
-        for cast_effect_id in tqdm(cast_effect_ids, desc="Matching cast events", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        for cast_effect_id in cast_effect_ids:
             if cast_effect_id not in begin_event_dict:
                 # The begin cast event for this cast was not recorded.
                 missing_begin_casts.append(cast_effect_id)
@@ -176,10 +182,10 @@ class EncounterLog(Base):
                     self.logger.error(f"Different amounts of begin and end cast events found for cast effect id {cast_effect_id} and ability id {ability_id}")
 
         if missing_begin_casts:
-            self.logger.info(f"{len(missing_begin_casts)} end cast events did not have matching begin cast events.")
+            self.logger.debug(f"{len(missing_begin_casts)} end cast events did not have matching begin cast events.")
 
         if missing_end_casts:
-            self.logger.info(f"{len(missing_end_casts)} begin cast events did not have matching end cast events.")
+            self.logger.debug(f"{len(missing_end_casts)} begin cast events did not have matching end cast events.")
 
         if missing_ability_id_begin_casts:
             # Match end cast events for which there was no matching ability id with begin cast events of the same effect cast id but a different ability id.
@@ -205,14 +211,14 @@ class EncounterLog(Base):
                     self.logger.debug(f"Skipping orphaned end casts for cast effect id {cast_effect_id} due to multiple viable begin cast ability ids")
 
             if num_unmatched_orphaned_end_casts:
-                self.logger.info(f"{num_unmatched_orphaned_end_casts} orphaned end cast events could not be matched to begin cast events with the same cast effect id.")
+                self.logger.debug(f"{num_unmatched_orphaned_end_casts} orphaned end cast events could not be matched to begin cast events with the same cast effect id.")
 
     def __match_combat_events(self):
         """
         Match begin combat encounters to their end events. Since combat happens sequentially these events should always happen sequentially as well.
         """
         current_encounter: BeginCombat = None
-        for event in tqdm(self.events, desc="Matching combat events", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        for event in self.events:
             if isinstance(event, BeginCombat):
                 if current_encounter is not None:
                     self.logger.error(f"Entering combat event {event} while already in combat event {current_encounter}")
@@ -245,7 +251,7 @@ class EncounterLog(Base):
         # This event is needed for a combat encounter to know in which trial it happened.
         last_trial_init: TrialInit = None
 
-        for event in tqdm(self.events, desc="Matching trial events", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        for event in self.events:
             if isinstance(event, BeginTrial):
                 if event.trial_id in begin_trial_cache:
                     self.logger.info(
@@ -438,7 +444,8 @@ class EncounterLog(Base):
         logs = []
         id_offset = 0
         current_log = cls(0)
-        for index, event in tqdm(enumerate(chunk_iterator), desc="Aggregating events", total=num_lines):
+        cls.logger.info("Aggregating events")
+        for index, event in enumerate(chunk_iterator):
             event.id = event.id - id_offset
             event.encounter_log = current_log
             events.append(event)

@@ -32,8 +32,6 @@ class PlayerInfo(Event):
         # Backup ability ids
         self._raw_back_bar = parsed_data[4]
 
-        self.unit: UnitAdded = None
-
     def _parse_info(self, raw_data: str):
         def parse_brackets(input_str: str):
             parsed_lists = []
@@ -80,8 +78,6 @@ class PlayerInfo(Event):
     def back_bar(self) -> List[AbilityInfo]:
         return [self.encounter_log.ability_infos[int(ability)] for ability in self._raw_back_bar if ability]
 
-    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
-        """
-        Store the player unit objects in addition to the ability infos.
-        """
-        self.unit = encounter_log.player_unit_added[self.unit_id]
+    @property
+    def unit(self) -> UnitAdded:
+        return self.encounter_log.player_unit_added[self.unit_id]

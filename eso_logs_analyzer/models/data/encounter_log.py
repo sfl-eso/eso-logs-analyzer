@@ -56,9 +56,8 @@ class EncounterLog(Base):
         self.player_unit_added: Dict[int, UnitAdded] = {unit.unit_id: unit for unit in self._event_dict[UnitAdded.event_type]
                                                         if unit.unit_type == UnitType.PLAYER}
 
-        for event in tqdm(self.events, "Resolving event references", position=self.__tqdm_index, leave=not self.__tqdm_index):
+        for event in tqdm(self.events, "Computing event times", position=self.__tqdm_index, leave=not self.__tqdm_index):
             event.compute_event_time(self)
-            event.resolve_ability_and_effect_info_references(self)
 
         # Match the span events with their end-counterparts and set the begin and end event fields.
         self.__match_cast_events()

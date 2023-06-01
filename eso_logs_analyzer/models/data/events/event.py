@@ -139,12 +139,6 @@ class Event(Base, AbstractEvent):
         else:
             self.logger.debug(f"Computing time for event {self} when it is already set")
 
-    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
-        """
-        Adds ability info and effect info objects using this events ability id if it has one.
-        """
-        pass
-
     def compute_offset_event_time(self, event_id: int) -> datetime:
         """
         Computes the time for the given event id using the millisecond offset encoded in the event ids.

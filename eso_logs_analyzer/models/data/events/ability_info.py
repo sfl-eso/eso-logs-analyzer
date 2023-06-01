@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from .event import Event
 
@@ -25,8 +25,6 @@ class AbilityInfo(Event):
         # If true, the ability can be blocked
         self.blockable = self._convert_boolean(blockable, field_name="blockable")
 
-        # The EffectInfo object belonging to the same ability id
-        self.effect_info: EffectInfo = None
-
-    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
-        self.effect_info = encounter_log.effect_infos.get(self.ability_id)
+    @property
+    def effect_info(self) -> Optional[EffectInfo]:
+        return self.encounter_log.effect_infos.get(self.ability_id)

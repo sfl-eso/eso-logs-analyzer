@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Optional
 
+from .abstract_ability import AbstractAbility
 from .enums import CastStatus
 from .event import Event
 
 if TYPE_CHECKING:
     from .begin_cast import BeginCast
-    from .ability_info import AbilityInfo
     from ..encounter_log import EncounterLog
 
 
-class EndCast(Event):
+class EndCast(Event, AbstractAbility):
     event_type: str = "END_CAST"
 
     def __init__(self,
@@ -32,10 +32,6 @@ class EndCast(Event):
         self.interrupting_unit_id = int(interrupting_unit_id) if interrupting_unit_id is not None else None
 
         self.begin_casts: List[BeginCast] = []
-        self.ability_info: AbilityInfo = None
-
-    def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
-        self.ability_info = encounter_log.ability_infos.get(self.ability_id)
 
     @property
     def begin_cast(self) -> Optional[BeginCast]:

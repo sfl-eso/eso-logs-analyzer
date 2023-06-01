@@ -33,10 +33,6 @@ class PlayerInfo(Event):
         self._raw_back_bar = parsed_data[4]
 
         self.unit: UnitAdded = None
-        self.passives: List[AbilityInfo] = []
-        self.passives_active: List[bool] = [bool(int(active)) for active in self._raw_passives_active]
-        self.front_bar: List[AbilityInfo] = []
-        self.back_bar: List[AbilityInfo] = []
 
     def _parse_info(self, raw_data: str):
         def parse_brackets(input_str: str):
@@ -68,11 +64,24 @@ class PlayerInfo(Event):
         back_bar = merged_info[4][1:-1].split(",")
         return passives, passives_active, gear, front_bar, back_bar
 
+    @property
+    def passives(self) -> List[AbilityInfo]:
+        return [self.encounter_log.ability_infos[int(ability)] for ability in self._raw_passives if ability]
+
+    @property
+    def passive_is_active_flags(self) -> List[bool]:
+        return [bool(int(active)) for active in self._raw_passives_active]
+
+    @property
+    def front_bar(self) -> List[AbilityInfo]:
+        return [self.encounter_log.ability_infos[int(ability)] for ability in self._raw_front_bar if ability]
+
+    @property
+    def back_bar(self) -> List[AbilityInfo]:
+        return [self.encounter_log.ability_infos[int(ability)] for ability in self._raw_back_bar if ability]
+
     def resolve_ability_and_effect_info_references(self, encounter_log: EncounterLog):
         """
         Store the player unit objects in addition to the ability infos.
         """
         self.unit = encounter_log.player_unit_added[self.unit_id]
-        self.passives = [encounter_log.ability_infos[int(ability)] for ability in self._raw_passives if ability]
-        self.front_bar = [encounter_log.ability_infos[int(ability)] for ability in self._raw_front_bar if ability]
-        self.back_bar = [encounter_log.ability_infos[int(ability)] for ability in self._raw_back_bar if ability]

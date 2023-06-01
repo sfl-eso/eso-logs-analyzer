@@ -83,6 +83,26 @@ def read_csv(file_name: str,
                 yield line
 
 
+def read_csv_chunk(file_name: str,
+                   chunk_begin: int,
+                   chunk_end: int,
+                   delimiter: str = ",",
+                   quotechar: str = '"') -> Generator[Union[str, dict], None, None]:
+    def line_generator(file_name):
+        with open(file_name, 'r') as file:
+            for index, line in enumerate(file):
+                if chunk_begin <= index < chunk_end:
+                    yield line
+                elif index >= chunk_end:
+                    return
+
+    csv.field_size_limit(__get_sys_max_size())
+    with open(file_name, 'r') as file:
+        data = csv.reader(line_generator(file_name), delimiter=delimiter, quotechar=quotechar)
+        for line in data:
+            yield line
+
+
 def parse_epoch_time(epoch_time: str) -> datetime:
     return datetime.fromtimestamp(int(epoch_time) / 1000)
 

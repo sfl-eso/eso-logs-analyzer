@@ -2,27 +2,24 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Union, List, Dict, Type, Set, Tuple
+from typing import Union, List, Dict, Type, Set
 
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
     TargetEvent, TrialInit, ErrorEventStub
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
-from ...parallel import ResultCollector, ParallelTask
-from ...utils import read_csv, get_num_lines, tqdm, read_csv_chunk, ChunkMetadata
+from ...loading.utils import get_num_lines, read_csv
+from ...utils import tqdm
 
 
 class EncounterLog(Base):
 
-    def __init__(self, tqdm_index: int, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Creates an encounter log object. Most instance variables are only declared, but not initialized with a value, since this object needs to be
         created and passed to each event that is part of it. The data will be filled at a later point.
-        @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
         """
         super().__init__(*args, **kwargs)
-
-        self.__tqdm_index = tqdm_index
 
         self.events: List[Event] = None
         self._event_dict: Dict[str, List[Event]] = None
@@ -279,7 +276,7 @@ class EncounterLog(Base):
         Unit ids of removed units may be reused for different units later on. Thus, we need to iterate over the events in their order.
         """
         added_units = {}
-        # Note: no need to use tqdm to monitor progress here, since this does not require a lot of time.
+
         for event in self.events:
             if isinstance(event, UnitAdded):
                 if event.unit_id in added_units:
@@ -349,115 +346,6 @@ class EncounterLog(Base):
                     events = []
                     current_id = 0
                     current_log = EncounterLog(tqdm_index)
-                else:
-                    break
-
-        # Initialize log by processing all the events in the log.
-        # If this step is skipped, the log object contains no useful data.
-        for log in logs:
-            log.initialize()
-
-        return logs if multiple else logs[0]
-
-    @classmethod
-    def parse_log_parallel(cls, file: Union[str, Path], multiple: bool = False, num_processes: int = 8, num_chunks: int = 64) -> Union[EncounterLog, List[EncounterLog]]:
-        """
-        Parses an encounterlog file into one or multiple logs depending on the passed parameters and how many logs are contained in the file.
-        @param file: File containing the encounter log data. Loads the file in parallel chunks.
-        @param multiple: If set to True, if multiple logs are in a single file, they will be loaded and their encounters chained together.
-        @param num_processes: How many processes should be used.
-        @param num_chunks: In how many parts the input file should be read. Should always be higher than the number of processes for performance reasons.
-        @return: A single or multiple encounter log objects, depending on the number of logs in the input file.
-        """
-        path = Path(file).absolute()
-        num_lines = get_num_lines(file)
-        chunk_size = int(num_lines / num_chunks)
-        input_chunks = []
-        id_offset = 0
-        while id_offset < num_lines:
-            chunk_end = min(id_offset + chunk_size, num_lines)
-            input_chunks.append((id_offset, chunk_end))
-            id_offset = chunk_end
-
-        chunk_metadata: List[ChunkMetadata] = ChunkMetadata.load_from_log(path, input_chunks)
-
-        class ChunkIterator(object):
-            def __init__(self, chunks: List[Tuple[int, int]], event_chunks: Dict[Tuple[int, int], List[Event]]):
-                self.chunks = sorted(chunks, key=lambda t: t[0])
-                self.event_chunks = event_chunks
-
-            def __iter__(self):
-                for chunk in self.chunks:
-                    for event in self.event_chunks[chunk]:
-                        yield event
-
-        class LogCollector(ResultCollector):
-            def __init__(self, chunks: List[Tuple[int, int]]):
-                super().__init__()
-                self.event_chunks: Dict[Tuple[int, int], List[Event]] = {}
-                self.chunks = chunks
-
-            def collect_result(self, result):
-                result_chunk, result_events = result
-                self.event_chunks[result_chunk] = result_events
-
-            def aggregated_result(self):
-                return ChunkIterator(self.chunks, self.event_chunks)
-
-            def is_completed(self) -> bool:
-                return all([chunk in self.event_chunks for chunk in self.chunks])
-
-        def read_log_chunk(chunk: ChunkMetadata, path: Path, tqdm_index: int):
-            csv_chunk = read_csv_chunk(str(path), chunk=chunk)
-            current_id = chunk.chunk_begin
-            events = []
-
-            for line in tqdm(csv_chunk, desc=f"Parsing log {path} from lines {chunk.chunk_begin} to {chunk.chunk_end}", total=chunk.num_lines, position=tqdm_index,
-                             leave=not tqdm_index):
-                # Convert the line into an event object
-                try:
-                    # We don't have a log to pass to the event yet.
-                    events.append(Event.create(current_id, None, int(line[0]), line[1], *line[2:]))
-                except ValueError as e:
-                    events.append(ErrorEventStub(current_id, None, int(line[0]), e, line[1:]))
-                    continue
-                except IndexError as e:
-                    cls.logger.error(f"Error {e} parsing line {current_id}: {line}")
-                finally:
-                    current_id += 1
-
-            return (chunk.chunk_begin, chunk.chunk_end), events
-
-        read_log_task = ParallelTask(description=f"Reading log file {path}",
-                                     num_processes=num_processes,
-                                     input_objects=chunk_metadata,
-                                     task_function=read_log_chunk,
-                                     result_collector=LogCollector(input_chunks),
-                                     task_function_kwargs={
-                                         "path": path
-                                     },
-                                     set_tqdm_index=True)
-        chunk_iterator = read_log_task.execute()
-        events = []
-
-        logs = []
-        id_offset = 0
-        current_log = cls(0)
-        cls.logger.info("Aggregating events")
-        for index, event in enumerate(chunk_iterator):
-            event.id = event.id - id_offset
-            event.encounter_log = current_log
-            events.append(event)
-
-            # Separate logs into different objects if there are multiple logs in the file
-            if isinstance(event, EndLog):
-                current_log.events = events[id_offset:index + 1]
-                logs.append(current_log)
-                if multiple:
-                    # We have a separate log starting after this line
-                    events = []
-                    id_offset = index + 1
-                    current_log = cls(0)
                 else:
                     break
 

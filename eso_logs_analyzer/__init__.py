@@ -1,5 +1,5 @@
-from .analyzer import Analyzer
-
-__all__ = [
-    Analyzer.__name__
-]
+# from .analyzer import Analyzer
+#
+# __all__ = [
+#     Analyzer.__name__
+# ]

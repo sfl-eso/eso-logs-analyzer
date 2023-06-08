@@ -1,9 +1,4 @@
-import csv
-import platform
-import sys
 from datetime import datetime
-from pathlib import Path
-from typing import Set, Generator, Union, List, Tuple
 
 
 def tqdm(iterable=None, desc=None, total=None, leave=True, file=None,
@@ -31,77 +26,6 @@ def tqdm(iterable=None, desc=None, total=None, leave=True, file=None,
             yield obj
 
 
-def get_num_lines(file_name: str) -> int:
-    """
-    Fast counting of the number of lines in large files (https://stackoverflow.com/a/9631635).
-    """
-
-    def blocks(file, size=65536):
-        while True:
-            b = file.read(size)
-            if not b:
-                break
-            yield b
-
-    with open(file_name, "r", encoding="utf-8", errors="ignore") as f:
-        return sum(bl.count("\n") for bl in blocks(f))
-
-
-def __get_sys_max_size():
-    """
-    Returns the max size for the platform we are running on. For Linux systems its just sys.maxsize, but for Windows,
-    the number returned by sys.maxsize won't fit into a C long. Instead, return the max value that fits into a C long in that case.
-    @return: The max size for the current platform.
-    """
-    match platform.system().lower():
-        case "linux":
-            return sys.maxsize
-        case "windows":
-            # Bit shift by 31, since in C long is signed
-            return (1 << 31) - 1
-
-
-def read_csv(file_name: str,
-             delimiter: str = ",",
-             quotechar: str = '"',
-             has_header: bool = True,
-             columns_to_keep: Set[str] = None) -> Generator[Union[str, dict], None, None]:
-    csv.field_size_limit(__get_sys_max_size())
-    with open(file_name, 'r') as file:
-        data = csv.reader(file, delimiter=delimiter, quotechar=quotechar)
-        if has_header:
-            header = next(data)
-            for row in data:
-                padded_row = row
-                for _ in range(len(header) - len(row)):
-                    padded_row.append(None)
-                named_row = {name: padded_row[index] for index, name in enumerate(header)}
-                if columns_to_keep:
-                    named_row = {key: value for key, value in named_row.items() if key in columns_to_keep}
-                yield named_row
-        else:
-            for line in data:
-                yield line
-
-
-def read_csv_chunk(file_name: str,
-                   chunk,
-                   delimiter: str = ",",
-                   quotechar: str = '"') -> Generator[Union[str, dict], None, None]:
-    def line_generator(file_name):
-        with open(file_name, 'r') as file:
-            file.seek(chunk.offset)
-            num_lines = 0
-            while num_lines < chunk.num_lines:
-                yield file.readline()
-                num_lines += 1
-
-    csv.field_size_limit(__get_sys_max_size())
-    data = csv.reader(line_generator(file_name), delimiter=delimiter, quotechar=quotechar)
-    for line in data:
-        yield line
-
-
 def parse_epoch_time(epoch_time: str) -> datetime:
     return datetime.fromtimestamp(int(epoch_time) / 1000)
 
@@ -114,45 +38,3 @@ def all_subclasses(cls):
         else:
             classes.extend(all_subclasses(subclass))
     return classes
-
-
-class ChunkMetadata:
-    def __init__(self, chunk: Tuple[int, int], offset: int):
-        self.chunk_begin = chunk[0]
-        self.chunk_end = chunk[1]
-        self.offset = offset
-
-    def __str__(self):
-        return f"{self.__class__.__name__}(chunk_begin={self.chunk_begin}, chunk_end={self.chunk_end}, offset={self.offset})"
-
-    __repr__ = __str__
-
-    @property
-    def num_lines(self):
-        return self.chunk_end - self.chunk_begin
-
-    @classmethod
-    def load_from_log(cls, path: Path, chunks: List[Tuple[int, int]]):
-        from tqdm import tqdm
-
-        data = []
-        offset_lines = {chunk[0]: chunk for chunk in chunks}
-        # The last chunk ends on the last line
-        num_lines = chunks[-1][1]
-
-        with open(path, "r") as log_file:
-            progress_bar = tqdm(desc=f"Generating metadata for {path}", total=num_lines)
-
-            # Add the "offset" for the first line
-            data.append(ChunkMetadata(offset_lines[0], 0))
-
-            line = log_file.readline()
-            line_number = 1
-            while line:
-                if line_number in offset_lines:
-                    data.append(ChunkMetadata(offset_lines[line_number], log_file.tell()))
-                line_number += 1
-                progress_bar.update(1)
-                line = log_file.readline()
-
-        return data

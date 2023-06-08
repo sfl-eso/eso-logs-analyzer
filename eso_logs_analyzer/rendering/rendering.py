@@ -77,12 +77,11 @@ def render_readme(config: Config, dev_mode: bool = False):
     }, file_name)
 
 
-def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: Config, tqdm_index: int, dev_mode: bool = False) -> None:
+def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: Config, dev_mode: bool = False) -> None:
     """
     Analyzes and renders a log as html.
     @param encounter_log: Either a single log or multiple logs that were in a single file.
     @param config: The current configuration.
-    @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
     @param dev_mode: If set, templates are rendered in development mode.
     """
 
@@ -104,10 +103,10 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
     combat_encounters = []
     if isinstance(encounter_log, list):
         for log in encounter_log:
-            combat_encounters.extend(CombatEncounter.load(log, tqdm_index))
+            combat_encounters.extend(CombatEncounter.load(log))
         encounter_log = encounter_log[0]
     else:
-        combat_encounters = CombatEncounter.load(encounter_log, tqdm_index)
+        combat_encounters = CombatEncounter.load(encounter_log)
 
     boss_encounters = [encounter for encounter in combat_encounters if encounter.is_boss_encounter]
     # Sort first by encounter time and then by boss
@@ -119,7 +118,7 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
     log_trial_name = ""
 
     # TODO: group encounters by trial and trial boss (under a separate heading level (h1?))
-    for encounter in tqdm(boss_encounters, desc="Computing boss encounter uptimes", position=tqdm_index, leave=not tqdm_index):
+    for encounter in tqdm(boss_encounters, desc="Computing boss encounter uptimes"):
         # TODO: filter for clears/make bosses configurable
         try:
             # TODO: filter for clears/make bosses configurable
@@ -150,7 +149,7 @@ def render_log(encounter_log: Union[EncounterLog, List[EncounterLog]], config: C
         "encounters": encounters_html,
         "url_prefix": config.web.url_prefix,
         "dev_mode": dev_mode
-    }, file_name, print_message=not tqdm_index)
+    }, file_name)
 
 
 def render_encounter(encounter: CombatEncounter, hostile_units: List[str] = None, debuffs: List[str] = None) -> str:

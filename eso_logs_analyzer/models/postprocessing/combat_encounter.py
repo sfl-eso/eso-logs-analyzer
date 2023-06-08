@@ -81,11 +81,10 @@ class CombatEncounter(Base):
             unit.compute_debuff_uptimes()
 
     @classmethod
-    def load(cls, encounter_log: EncounterLog, tqdm_index: int = 0) -> List[CombatEncounter]:
+    def load(cls, encounter_log: EncounterLog) -> List[CombatEncounter]:
         """
         Load combat encounters in a single log.
         @param encounter_log: The log object containing the parsed encounterlog data.
-        @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
         @return: List of combat encounters occurring in the input log.
         """
         encounters = []
@@ -95,7 +94,7 @@ class CombatEncounter(Base):
         # combat encounters.
         combat_phase_delta: timedelta = timedelta(seconds=2)
 
-        for event in tqdm(encounter_log.events, desc="Creating combat encounters", position=tqdm_index, leave=not tqdm_index):
+        for event in tqdm(encounter_log.events, desc="Creating combat encounters"):
             if isinstance(event, BeginCombat):
                 if begin_encounter is None:
                     begin_encounter = event

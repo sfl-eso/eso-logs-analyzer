@@ -3,7 +3,7 @@ from typing import Union, List, Tuple, Dict
 
 from .chunk_metadata import ChunkMetadata
 from .log_loader import LogLoader
-from .utils import get_num_lines, read_csv_chunk
+from .utils import read_csv_chunk
 from ..models.data import EncounterLog
 from ..models.data.events import Event, ErrorEventStub, EndLog
 from ..parallel import ResultCollector, ParallelTask
@@ -57,13 +57,13 @@ class ParallelLoader(LogLoader):
         @param num_processes: How many processes should be used.
         @param num_chunks: In how many parts the input file should be read. Should always be higher than the number of processes for performance reasons.
         """
-        super().__init__()
+        super().__init__(file=file, multiple=multiple)
 
-        self.file = Path(file).absolute()
-        assert self.file.exists() and self.file.is_file(), f"File {file} does not exist or is not a file!"
-        self.num_lines = get_num_lines(self.file)
-
-        self.multiple = multiple
+        # self.file = Path(file).absolute()
+        # assert self.file.exists() and self.file.is_file(), f"File {file} does not exist or is not a file!"
+        # self.num_lines = get_num_lines(self.file)
+        #
+        # self.multiple = multiple
         self.num_processes = num_processes
         self.num_chunks = num_chunks
 
@@ -87,12 +87,7 @@ class ParallelLoader(LogLoader):
 
         return input_chunks
 
-    def parse_log(self) -> Union[EncounterLog, List[EncounterLog]]:
-        """
-        Parses an encounterlog file into one or multiple logs depending on the passed parameters and how many logs are contained in the file.
-        @return: A single or multiple encounter log objects, depending on the number of logs in the input file.
-        """
-
+    def _load_log(self) -> List[EncounterLog]:
         def read_log_chunk(chunk: ChunkMetadata, path: Path):
             csv_chunk = read_csv_chunk(str(path), chunk=chunk)
             current_id = chunk.chunk_begin
@@ -145,16 +140,4 @@ class ParallelLoader(LogLoader):
                     current_log = EncounterLog()
                 else:
                     break
-
-        # Initialize log by processing all the events in the log.
-        # If this step is skipped, the log object contains no useful data.
-        for log in logs:
-            log.initialize()
-
-        # Make sure that the index for each event equals the event's id.
-        self.logger.info("Validating event indices")
-        for log in logs:
-            assert all([event.id == index for index, event in enumerate(log.events)]), f"Not all event ids equal the indices of the events " \
-                                                                                       f"for log {log}"
-
-        return logs if self.multiple else logs[0]
+        return logs

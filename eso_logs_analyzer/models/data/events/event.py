@@ -100,24 +100,6 @@ class Event(Base, AbstractEvent):
     def sort_key(cls, event: Event):
         return event.id
 
-    # @property
-    # def next(self):
-    #     return self._next
-    #
-    # @next.setter
-    # def next(self, value: Event):
-    #     self._next = value
-    #     value._previous = self
-    #
-    # @property
-    # def previous(self):
-    #     return self._previous
-    #
-    # @previous.setter
-    # def previous(self, value: Event):
-    #     self._previous = value
-    #     value._next = self
-
     def span(self, other: Event) -> EventSpan:
         from ..event_span import EventSpan
         return EventSpan(self, other)

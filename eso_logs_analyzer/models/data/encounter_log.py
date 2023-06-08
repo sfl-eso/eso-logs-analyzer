@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Union, List, Dict, Type, Set, Tuple
 
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
-    TargetEvent, TrialInit
+    TargetEvent, TrialInit, ErrorEventStub
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
 from ...parallel import ResultCollector, ParallelTask
@@ -335,7 +335,7 @@ class EncounterLog(Base):
                 event = Event.create(current_id, current_log, int(line[0]), line[1], *line[2:])
                 events.append(event)
             except ValueError as e:
-                cls.logger.error(f"Could not create Event of type {line[1]} at line {current_id + 1}! {e}")
+                events.append(ErrorEventStub(current_id, None, int(line[0]), e, line[1:]))
                 continue
             finally:
                 current_id += 1
@@ -417,10 +417,9 @@ class EncounterLog(Base):
                 # Convert the line into an event object
                 try:
                     # We don't have a log to pass to the event yet.
-                    event = Event.create(current_id, None, int(line[0]), line[1], *line[2:])
-                    events.append(event)
+                    events.append(Event.create(current_id, None, int(line[0]), line[1], *line[2:]))
                 except ValueError as e:
-                    cls.logger.error(f"Could not create Event of type {line[1]} at line {current_id + 1}! {e}")
+                    events.append(ErrorEventStub(current_id, None, int(line[0]), e, line[1:]))
                     continue
                 except IndexError as e:
                     cls.logger.error(f"Error {e} parsing line {current_id}: {line}")

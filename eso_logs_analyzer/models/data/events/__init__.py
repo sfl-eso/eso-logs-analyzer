@@ -10,6 +10,7 @@ from .end_cast import EndCast
 from .end_combat import EndCombat
 from .end_log import EndLog
 from .end_trial import EndTrial
+from .error_event_stub import ErrorEventStub
 from .event import Event
 from .health_regen_event import HealthRegen
 from .map_changed import MapChanged
@@ -35,6 +36,7 @@ __all__ = [
     EndCombat.__name__,
     EndLog.__name__,
     EndTrial.__name__,
+    ErrorEventStub.__name__,
     Event.__name__,
     HealthRegen.__name__,
     MapChanged.__name__,

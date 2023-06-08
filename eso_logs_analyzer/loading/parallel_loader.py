@@ -5,7 +5,7 @@ from .chunk_metadata import ChunkMetadata
 from .log_loader import LogLoader
 from .utils import read_csv_chunk
 from ..models.data import EncounterLog
-from ..models.data.events import Event, ErrorEventStub, EndLog
+from ..models.data.events import Event, EndLog
 from ..parallel import ResultCollector, ParallelTask
 
 
@@ -58,12 +58,6 @@ class ParallelLoader(LogLoader):
         @param num_chunks: In how many parts the input file should be read. Should always be higher than the number of processes for performance reasons.
         """
         super().__init__(file=file, multiple=multiple)
-
-        # self.file = Path(file).absolute()
-        # assert self.file.exists() and self.file.is_file(), f"File {file} does not exist or is not a file!"
-        # self.num_lines = get_num_lines(self.file)
-        #
-        # self.multiple = multiple
         self.num_processes = num_processes
         self.num_chunks = num_chunks
 
@@ -96,10 +90,7 @@ class ParallelLoader(LogLoader):
             for line in csv_chunk:
                 try:
                     # We don't have a log to pass to the event yet.
-                    events.append(Event.create(current_id, None, int(line[0]), line[1], *line[2:]))
-                except ValueError as e:
-                    events.append(ErrorEventStub(current_id, None, int(line[0]), e, line[1:]))
-                    continue
+                    events.append(self._load_line(current_id, None, line))
                 except IndexError as e:
                     self.logger.error(f"Error {e} parsing line {current_id}: {line}")
                 finally:

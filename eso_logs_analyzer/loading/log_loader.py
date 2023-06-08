@@ -9,9 +9,6 @@ from eso_logs_analyzer.utils import tqdm
 
 
 class LogLoader(Base):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def __init__(self, file: Union[str, Path], multiple: bool = False, *args, **kwargs):
         """
         Loads an encounterlog file into one or multiple logs.
@@ -62,7 +59,6 @@ class LogLoader(Base):
         Parses an encounterlog file into one or multiple logs depending on the passed parameters and how many logs are contained in the file.
         @return: A single or multiple encounter log objects, depending on the number of logs in the input file.
         """
-
         logs = self._load_log()
 
         # Initialize log by processing all the events in the log.

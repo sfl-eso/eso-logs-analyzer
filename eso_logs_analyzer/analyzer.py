@@ -4,7 +4,7 @@ from pathlib import Path
 
 from python_json_config import Config, ConfigBuilder
 
-from .log import init_loggers
+from .logging import init_loggers
 from .models.data import EncounterLog
 from .parallel import ParallelTask
 from .rendering import render_readme, render_log

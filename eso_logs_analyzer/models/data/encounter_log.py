@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
-from typing import Union, List, Dict, Type, Set
+from typing import List, Dict, Type, Set
 
 from .events import Event, EndLog, EffectInfo, BeginCast, BeginLog, AbilityInfo, EndCast, UnitAdded, UnitChanged, UnitRemoved, BeginTrial, EndTrial, BeginCombat, EndCombat, \
-    TargetEvent, TrialInit, ErrorEventStub
+    TargetEvent, TrialInit
 from .events.enums import UnitType, CastStatus, TrialId
 from ..base import Base
-from ...loading.utils import get_num_lines, read_csv
-from ...utils import tqdm
 
 
 class EncounterLog(Base):
@@ -306,52 +303,3 @@ class EncounterLog(Base):
 
     def events_for_type(self, event_type: Type[Event]):
         return self._event_dict[event_type.event_type]
-
-    @classmethod
-    def parse_log(cls, file: Union[str, Path], multiple: bool = False, tqdm_index: int = 0) -> Union[EncounterLog, List[EncounterLog]]:
-        """
-        Parses an encounterlog file into one or multiple logs depending on the passed parameters and how many logs are contained in the file.
-        @param file: File containing the encounter log data.
-        @param multiple: If set to True, if multiple logs are in a single file, they will be loaded and their encounters chained together.
-        @param tqdm_index: If set to a non-zero value, this method happens in a parallel context and the tqdm progress bar needs to be adjusted.
-        @return: A single or multiple encounter log objects, depending on the number of logs in the input file.
-        """
-        path = Path(file).absolute()
-        num_lines = get_num_lines(file)
-        csv_file = read_csv(str(path), has_header=False)
-        events = []
-        current_id = 0
-        logs = []
-
-        current_log = cls(tqdm_index)
-
-        for line in tqdm(csv_file, desc=f"Parsing log {path}", total=num_lines, position=tqdm_index, leave=not tqdm_index):
-
-            # Convert the line into an event object
-            try:
-                event = Event.create(current_id, current_log, int(line[0]), line[1], *line[2:])
-                events.append(event)
-            except ValueError as e:
-                events.append(ErrorEventStub(current_id, None, int(line[0]), e, line[1:]))
-                continue
-            finally:
-                current_id += 1
-
-            # Separate logs into different objects if there are multiple logs in the file
-            if isinstance(event, EndLog):
-                current_log.events = events
-                logs.append(current_log)
-                if multiple:
-                    # We have a separate log starting after this line
-                    events = []
-                    current_id = 0
-                    current_log = EncounterLog(tqdm_index)
-                else:
-                    break
-
-        # Initialize log by processing all the events in the log.
-        # If this step is skipped, the log object contains no useful data.
-        for log in logs:
-            log.initialize()
-
-        return logs if multiple else logs[0]

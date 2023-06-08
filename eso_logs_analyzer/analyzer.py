@@ -4,9 +4,8 @@ from pathlib import Path
 
 from python_json_config import Config, ConfigBuilder
 
+from .loading import load_log
 from .logging import init_loggers
-from .models.data import EncounterLog
-from .parallel import ParallelTask
 from .rendering import render_readme, render_log
 
 
@@ -45,30 +44,17 @@ class Analyzer:
         assert self.input_dir.exists(), f"Log file or directory at {self.input_dir} does not exist."
 
     def run(self):
-        def analyze_log(log_file: Path, multiple: bool, config: Config, tqdm_index: int, dev_mode: bool):
-            logs = EncounterLog.parse_log(file=log_file, multiple=multiple, tqdm_index=tqdm_index)
-            render_log(encounter_log=logs, config=config, tqdm_index=tqdm_index, dev_mode=dev_mode)
-
         # Copy the web resources (javascript and css) to target dir.
         copy_tree(str(self.project_root / self.config.web.resource_path), self.config.export.path)
 
-        input_files = []
         if self.input_dir.is_file():
-            # Process single log file
-            analyze_log(self.input_dir, self.read_multiple_logs_in_file, self.config, tqdm_index=0, dev_mode=self.cli_args.dev)
+            input_files = [self.input_dir]
         else:
             input_files = list([file for file in self.input_dir.iterdir() if file.is_file() and file.suffix == self.__LOG_FILE_SUFFIX])
-            parallel_task = ParallelTask("Analyze log files",
-                                         self.config.parallel.num_processes,
-                                         input_objects=input_files,
-                                         task_function=analyze_log,
-                                         task_function_kwargs={
-                                             "multiple": self.read_multiple_logs_in_file,
-                                             "config": self.config,
-                                             "dev_mode": self.cli_args.dev
-                                         },
-                                         set_tqdm_index=True)
-            parallel_task.execute()
+
+        for file in input_files:
+            logs = load_log(file, self.read_multiple_logs_in_file, self.config)
+            render_log(encounter_log=logs, config=self.config, dev_mode=self.cli_args.dev)
 
         render_readme(self.config, dev_mode=self.cli_args.dev)
 
@@ -79,7 +65,6 @@ class Analyzer:
         # TODO: theoretical dps gain if we had full uptime
         # TODO: sort abilities by role
         # TODO: group abilities by role (separate tables)?
-        # TODO: auto collapse encounters and mark the boss hp % when we died (or cleared the encounter)
 
         # TODO: store metadata for generating of index.html
         # TODO: add table with more metadata in readme (has to be computed when generating logs and stored in metadata)

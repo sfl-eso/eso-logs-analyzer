@@ -1,7 +1,5 @@
-from .log_loader import LogLoader
-from .parallel_loader import ParallelLoader
+from .loading import load_log
 
 __all__ = [
-    LogLoader.__name__,
-    ParallelLoader.__name__
+    load_log.__name__
 ]

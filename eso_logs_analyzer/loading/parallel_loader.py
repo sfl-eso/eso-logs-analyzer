@@ -98,7 +98,7 @@ class ParallelLoader(LogLoader):
 
             return (chunk.chunk_begin, chunk.chunk_end), events
 
-        read_log_task = ParallelTask(description=f"Reading log file {self.file}",
+        read_log_task = ParallelTask(description=self._description,
                                      num_processes=self.num_processes,
                                      input_objects=self.chunk_metadata,
                                      task_function=read_log_chunk,

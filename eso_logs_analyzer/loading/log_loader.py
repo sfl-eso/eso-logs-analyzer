@@ -22,6 +22,10 @@ class LogLoader(Base):
         self.num_lines = get_num_lines(self.file)
         self.multiple = multiple
 
+    @property
+    def _description(self):
+        return f"Parsing log {self.file}"
+
     def _load_line(self, current_id, current_log, line) -> Event:
         try:
             return Event.create(current_id, current_log, int(line[0]), line[1], *line[2:])
@@ -36,7 +40,7 @@ class LogLoader(Base):
 
         current_log = EncounterLog()
 
-        for line in tqdm(csv_file, desc=f"Parsing log {self.file}", total=self.num_lines):
+        for line in tqdm(csv_file, desc=self._description, total=self.num_lines):
             event = self._load_line(current_id, current_log, line)
             events.append(event)
             current_id += 1

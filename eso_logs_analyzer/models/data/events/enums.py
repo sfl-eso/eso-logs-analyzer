@@ -57,18 +57,19 @@ class ClassId(Enum):
     WARDEN = "4"
     NECROMANCER = "5"
     TEMPLAR = "6"
+    ARCANIST = "117"
 
 
 class RaceId(Enum):
-    INVALID0 = "0"
+    INVALID = "0"
     BRETON = "1"
-    INVALID2 = "2"
-    INVALID3 = "3"
+    # INVALID2 = "2"
+    # INVALID3 = "3"
     DUNMER = "4"
-    INVALID5 = "5"
-    INVALID6 = "6"
+    NORD = "5"
+    # INVALID6 = "6"
     ALTMER = "7"
-    INVALID8 = "8"
+    # INVALID8 = "8"
     KHAJIIT = "9"
     IMPERIAL = "10"
 

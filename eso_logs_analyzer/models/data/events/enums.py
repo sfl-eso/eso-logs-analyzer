@@ -63,13 +63,13 @@ class ClassId(Enum):
 class RaceId(Enum):
     INVALID = "0"
     BRETON = "1"
-    # INVALID2 = "2"
-    # INVALID3 = "3"
+    REDGUARD = "2"
+    ORC = "3"
     DUNMER = "4"
     NORD = "5"
-    # INVALID6 = "6"
+    ARGONIAN = "6"
     ALTMER = "7"
-    # INVALID8 = "8"
+    BOSMER = "8"
     KHAJIIT = "9"
     IMPERIAL = "10"
 
